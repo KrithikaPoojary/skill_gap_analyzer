@@ -1,0 +1,19 @@
+"""Pinned Python dependency list for the backend.
+
+Install with:
+    pip install -r requirements.txt
+
+For development/testing extras, also run:
+    pip install -r requirements-dev.txt
+"""
+
+# Web framework
+fastapi==0.115.12
+uvicorn[standard]==0.34.3
+
+# Configuration management (Pydantic v2 settings)
+pydantic==2.11.7
+pydantic-settings==2.7.1
+
+# Async HTTP client (used in tests via HTTPX + anyio)
+httpx==0.28.1

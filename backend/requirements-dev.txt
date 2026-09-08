@@ -1,0 +1,18 @@
+"""Development and testing dependencies.
+
+Install with:
+    pip install -r requirements-dev.txt
+
+These are NOT installed in production deployments.
+"""
+
+# Testing framework
+pytest==8.4.0
+pytest-asyncio==0.24.0
+anyio==4.9.0
+
+# Already in requirements.txt but pinned here for IDE completeness
+httpx==0.28.1
+
+# Code quality
+ruff==0.9.10
