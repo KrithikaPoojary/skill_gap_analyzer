@@ -13,6 +13,7 @@ from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.associations import UserSkill
+    from app.models.role import UserTargetRole
 
 
 class User(Base, TimestampMixin):
@@ -38,6 +39,13 @@ class User(Base, TimestampMixin):
     # 1-to-many relationship with UserSkill association
     user_skills: Mapped[list[UserSkill]] = relationship(
         "UserSkill",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+    # 1-to-many relationship with UserTargetRole association
+    target_roles: Mapped[list[UserTargetRole]] = relationship(
+        "UserTargetRole",
         back_populates="user",
         cascade="all, delete-orphan",
     )

@@ -14,6 +14,7 @@ from app.db.base import Base, TimestampMixin
 
 if TYPE_CHECKING:
     from app.models.associations import JobSkill, UserSkill
+    from app.models.role import RoleSkillWeighting
 
 
 class SkillCategory(str, enum.Enum):
@@ -64,6 +65,11 @@ class Skill(Base, TimestampMixin):
     )
     user_skills: Mapped[list[UserSkill]] = relationship(
         "UserSkill",
+        back_populates="skill",
+        cascade="all, delete-orphan",
+    )
+    role_skills: Mapped[list[RoleSkillWeighting]] = relationship(
+        "RoleSkillWeighting",
         back_populates="skill",
         cascade="all, delete-orphan",
     )
