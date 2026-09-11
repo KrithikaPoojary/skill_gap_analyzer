@@ -6,10 +6,14 @@ salary bands, and raw requirements for skill extraction.
 
 from __future__ import annotations
 from datetime import datetime
+from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, DateTime, Float, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin, utc_now
+
+if TYPE_CHECKING:
+    from app.models.associations import JobSkill
 
 
 class JobPosting(Base, TimestampMixin):
@@ -44,6 +48,13 @@ class JobPosting(Base, TimestampMixin):
         DateTime(timezone=True),
         default=utc_now,
         nullable=False,
+    )
+
+    # 1-to-many relationship with JobSkill association
+    job_skills: Mapped[list[JobSkill]] = relationship(
+        "JobSkill",
+        back_populates="job",
+        cascade="all, delete-orphan",
     )
 
     def __repr__(self) -> str:

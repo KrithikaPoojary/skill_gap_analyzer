@@ -5,10 +5,14 @@ supporting resumes, links, experience levels, and career details.
 """
 
 from __future__ import annotations
+from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.associations import UserSkill
 
 
 class User(Base, TimestampMixin):
@@ -28,6 +32,13 @@ class User(Base, TimestampMixin):
         "Profile",
         back_populates="user",
         uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+    # 1-to-many relationship with UserSkill association
+    user_skills: Mapped[list[UserSkill]] = relationship(
+        "UserSkill",
+        back_populates="user",
         cascade="all, delete-orphan",
     )
 

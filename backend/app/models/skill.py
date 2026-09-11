@@ -6,10 +6,14 @@ normalized names for search/matching, and aliases.
 
 from __future__ import annotations
 import enum
+from typing import TYPE_CHECKING
 from sqlalchemy import Boolean, Enum as SQLEnum, Integer, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.associations import JobSkill, UserSkill
 
 
 class SkillCategory(str, enum.Enum):
@@ -51,6 +55,18 @@ class Skill(Base, TimestampMixin):
         nullable=True,
     )  # Comma-separated alternative names/spellings
     is_verified: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+
+    # Relationships to associations
+    job_skills: Mapped[list[JobSkill]] = relationship(
+        "JobSkill",
+        back_populates="skill",
+        cascade="all, delete-orphan",
+    )
+    user_skills: Mapped[list[UserSkill]] = relationship(
+        "UserSkill",
+        back_populates="skill",
+        cascade="all, delete-orphan",
+    )
 
     @classmethod
     def normalize(cls, raw_name: str) -> str:
