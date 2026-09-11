@@ -82,3 +82,20 @@ class TestHealthEndpoint:
         custom_id = "test-correlation-abc123"
         response = client.get(self.ENDPOINT, headers={"X-Request-ID": custom_id})
         assert response.headers.get("x-request-id") == custom_id
+
+    def test_health_database_field_is_connected(self, client: TestClient) -> None:
+        """Health payload contains database connectivity indicator."""
+        data = client.get(self.ENDPOINT).json()["data"]
+        assert data.get("database") == "connected"
+
+    def test_health_db_endpoint_returns_metrics(self, client: TestClient) -> None:
+        """GET /api/v1/health/db returns latency and dialect details."""
+        response = client.get(f"{self.ENDPOINT}/db")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["success"] is True
+        data = body["data"]
+        assert data["status"] == "healthy"
+        assert data["database"] == "connected"
+        assert "latency_ms" in data
+        assert "dialect" in data

@@ -44,16 +44,16 @@ Phase 6: Containerization, Testing Hardening & Portfolio Release (Days 28–30)
 - [ ] Day 2 verification and documentation
 
 #### Day 3: Database Design & Schema Modeling
-- [ ] Database technology selection and connection factory
-- [ ] User and Profile schema modeling
-- [ ] Job Posting schema modeling
-- [ ] Skill entity and taxonomy schema
-- [ ] Many-to-many relationship tables (JobSkills, UserSkills)
-- [ ] Target Roles and Skill Weightings schema
-- [ ] Database migration baseline
-- [ ] Database session dependency injection
-- [ ] Repository pattern abstraction for entity access
-- [ ] Database connection health check and schema validation tests
+- [x] Database technology selection and connection factory
+- [x] User and Profile schema modeling
+- [x] Job Posting schema modeling
+- [x] Skill entity and taxonomy schema
+- [x] Many-to-many relationship tables (JobSkills, UserSkills)
+- [x] Target Roles and Skill Weightings schema
+- [x] Database migration baseline
+- [x] Database session dependency injection
+- [x] Repository pattern abstraction for entity access
+- [x] Database connection health check and schema validation tests
 
 #### Day 4: Job Data Model & Validation
 - [ ] Core Job Pydantic validation schemas
