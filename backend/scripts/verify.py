@@ -1,11 +1,12 @@
-"""Day 3 Verification Script.
+"""System Verification Script.
 
 Validates:
-1. Database connectivity and ping response.
-2. Complete schema inspection across all 9 ORM tables.
-3. Alembic migration head alignment.
-4. Repository pattern operations.
-5. Full pytest test suite execution and test count reporting.
+1. Application settings and configuration loading.
+2. Database engine connectivity and ping latency.
+3. Complete schema inspection across all ORM tables.
+4. Alembic migration head alignment.
+5. Repository layer instantiation.
+6. Full pytest test suite execution and test count reporting.
 """
 
 from datetime import datetime, timezone
@@ -21,6 +22,7 @@ if backend_root not in sys.path:
 
 from alembic.config import Config
 from alembic.script import ScriptDirectory
+from app.core.config import settings
 from app.db.base import Base
 from app.db.session import engine, ping_database
 import app.models  # noqa: F401
@@ -39,12 +41,20 @@ def log_step(name: str, status: bool, detail: str = "") -> None:
 
 def main() -> int:
     print("=" * 60)
-    print("  DAY 3 VERIFICATION - DATABASE DESIGN & SCHEMA MODELING")
+    print(f"  SYSTEM VERIFICATION - {settings.app_name}")
     print("=" * 60)
 
     all_passed = True
 
-    # 1. Database Ping
+    # 1. Configuration Check
+    try:
+        cfg_ok = bool(settings.app_name and settings.database_url)
+        log_step("Application Settings Loading", cfg_ok, f"Environment: {settings.environment}")
+    except Exception as exc:
+        log_step("Application Settings Loading", False, str(exc))
+        all_passed = False
+
+    # 2. Database Ping
     try:
         ping_ok = ping_database(engine)
         log_step("Database Connectivity Ping", ping_ok, "Engine ping successful")
@@ -52,7 +62,7 @@ def main() -> int:
         log_step("Database Connectivity Ping", False, str(exc))
         all_passed = False
 
-    # 2. Schema Table Verification
+    # 3. Schema Table Verification
     try:
         inspector = inspect(engine)
         existing_tables = set(inspector.get_table_names())
@@ -67,7 +77,6 @@ def main() -> int:
             "role_skill_weightings",
             "user_target_roles",
         }
-        # If tables aren't in SQLite file yet, create them with Base.metadata.create_all
         if not expected_tables.issubset(existing_tables):
             Base.metadata.create_all(bind=engine)
             inspector = inspect(engine)
@@ -83,7 +92,7 @@ def main() -> int:
         log_step("Schema Table Verification", False, str(exc))
         all_passed = False
 
-    # 3. Alembic Configuration Check
+    # 4. Alembic Configuration Check
     try:
         ini_path = os.path.join(backend_root, "alembic.ini")
         cfg = Config(ini_path)
@@ -97,7 +106,7 @@ def main() -> int:
         log_step("Alembic Migration Baseline", False, str(exc))
         all_passed = False
 
-    # 4. Repository Instantiations
+    # 5. Repository Instantiations
     repos_ok = all(
         [
             user_repository is not None,
@@ -108,7 +117,7 @@ def main() -> int:
     )
     log_step("Repository Layer Instantiation", repos_ok, "User, Job, Skill, Role repos active")
 
-    # 5. Run Pytest Suite
+    # 6. Run Pytest Suite
     print("\n  Running full test suite...")
     venv_python = sys.executable
     result = subprocess.run(
@@ -127,10 +136,10 @@ def main() -> int:
 
     print("-" * 60)
     if all_passed:
-        print("  [SUCCESS] All Day 3 checks passed successfully!")
+        print("  [SUCCESS] All system checks passed successfully!")
         return 0
     else:
-        print("  [ERROR] Some Day 3 checks failed.")
+        print("  [ERROR] Some system checks failed.")
         return 1
 
 
