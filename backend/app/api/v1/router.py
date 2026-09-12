@@ -11,6 +11,7 @@ Adding a new feature area:
 from fastapi import APIRouter
 
 from app.api.v1.endpoints.health import router as health_router
+from app.api.v1.endpoints.jobs import router as jobs_router
 
 api_v1_router = APIRouter()
 
@@ -18,3 +19,4 @@ api_v1_router = APIRouter()
 # Register all v1 endpoint routers
 # ---------------------------------------------------------------------- #
 api_v1_router.include_router(health_router)
+api_v1_router.include_router(jobs_router)

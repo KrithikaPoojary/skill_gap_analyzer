@@ -15,6 +15,7 @@ import logging
 from typing import Any
 
 from fastapi import Request
+from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -118,15 +119,31 @@ async def validation_exception_handler(
         JSONResponse: Standardised 422 error envelope with field-level detail.
     """
     errors: list[Any] = exc.errors()
+    safe_errors: list[Any] = []
+    for err in errors:
+        if isinstance(err, dict):
+            clean_err = {}
+            for k, v in err.items():
+                if k == "ctx" and isinstance(v, dict):
+                    clean_err[k] = {
+                        ck: str(cv) if isinstance(cv, Exception) else cv
+                        for ck, cv in v.items()
+                    }
+                else:
+                    clean_err[k] = v
+            safe_errors.append(clean_err)
+        else:
+            safe_errors.append(err)
+
     logger.warning(
         "422 Validation Error: %s %s — %d error(s)",
         request.method,
         request.url.path,
-        len(errors),
+        len(safe_errors),
     )
     return JSONResponse(
         status_code=422,
-        content=validation_error(detail=errors).model_dump(),
+        content=jsonable_encoder(validation_error(detail=safe_errors).model_dump()),
     )
 
 
