@@ -6,6 +6,13 @@ from app.schemas.enums import (
     ExperienceLevel,
     SourcePlatform,
 )
+from app.schemas.job import (
+    JobBase,
+    JobCreate,
+    JobInDB,
+    JobRead,
+    JobUpdate,
+)
 from app.schemas.response import APIResponse, ok
 
 __all__ = [
@@ -15,4 +22,9 @@ __all__ = [
     "ExperienceLevel",
     "Currency",
     "SourcePlatform",
+    "JobBase",
+    "JobCreate",
+    "JobUpdate",
+    "JobInDB",
+    "JobRead",
 ]
