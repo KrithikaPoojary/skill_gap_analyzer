@@ -1,7 +1,7 @@
 """Job posting Pydantic request and response validation schemas."""
 
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.schemas.enums import (
     Currency,
@@ -28,7 +28,7 @@ class JobBase(BaseModel):
     )
     min_salary: float | None = Field(None, ge=0, description="Minimum annualized salary")
     max_salary: float | None = Field(None, ge=0, description="Maximum annualized salary")
-    salary_currency: str = Field("USD", min_length=3, max_length=10, description="ISO Currency code")
+    salary_currency: str = Field("USD", description="3-letter ISO Currency code")
     description: str = Field(..., min_length=10, description="Full job description")
     requirements_raw: str | None = Field(None, description="Raw bulleted requirements")
     source_url: str | None = Field(None, max_length=500, description="Origin listing URL")
@@ -37,6 +37,23 @@ class JobBase(BaseModel):
         description="Source channel",
     )
     is_active: bool = Field(True, description="Whether posting is active")
+
+    @field_validator("salary_currency")
+    @classmethod
+    def normalize_currency(cls, v: str) -> str:
+        """Strip whitespace and enforce uppercase 3-letter ISO code."""
+        cleaned = v.strip().upper()
+        if len(cleaned) != 3:
+            raise ValueError("Currency code must be a 3-letter ISO code (e.g. USD, EUR, INR)")
+        return cleaned
+
+    @model_validator(mode="after")
+    def validate_salary_range(self) -> "JobBase":
+        """Ensure min_salary is not greater than max_salary when both are specified."""
+        if self.min_salary is not None and self.max_salary is not None:
+            if self.min_salary > self.max_salary:
+                raise ValueError("min_salary cannot be greater than max_salary")
+        return self
 
 
 class JobCreate(JobBase):
@@ -56,12 +73,31 @@ class JobUpdate(BaseModel):
     experience_level: ExperienceLevel | None = None
     min_salary: float | None = Field(None, ge=0)
     max_salary: float | None = Field(None, ge=0)
-    salary_currency: str | None = Field(None, min_length=3, max_length=10)
+    salary_currency: str | None = None
     description: str | None = Field(None, min_length=10)
     requirements_raw: str | None = None
     source_url: str | None = Field(None, max_length=500)
     source_platform: SourcePlatform | None = None
     is_active: bool | None = None
+
+    @field_validator("salary_currency")
+    @classmethod
+    def normalize_currency(cls, v: str | None) -> str | None:
+        """Strip whitespace and enforce uppercase 3-letter ISO code."""
+        if v is not None:
+            cleaned = v.strip().upper()
+            if len(cleaned) != 3:
+                raise ValueError("Currency code must be a 3-letter ISO code (e.g. USD, EUR, INR)")
+            return cleaned
+        return v
+
+    @model_validator(mode="after")
+    def validate_salary_range(self) -> "JobUpdate":
+        """Ensure min_salary is not greater than max_salary when both are specified."""
+        if self.min_salary is not None and self.max_salary is not None:
+            if self.min_salary > self.max_salary:
+                raise ValueError("min_salary cannot be greater than max_salary")
+        return self
 
 
 class JobInDB(JobBase):

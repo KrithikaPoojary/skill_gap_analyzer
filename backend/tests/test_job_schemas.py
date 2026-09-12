@@ -92,3 +92,61 @@ class TestJobSchemas:
         assert job.id == 1
         assert job.title == "Data Engineer"
         assert job.created_at == now
+
+    def test_salary_currency_normalization(self) -> None:
+        job = JobCreate(
+            title="DevOps Engineer",
+            company_name="Cloud Solutions",
+            description="Manage CI/CD pipelines.",
+            salary_currency="  eur  ",
+        )
+        assert job.salary_currency == "EUR"
+
+    def test_invalid_salary_currency_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            JobCreate(
+                title="DevOps Engineer",
+                company_name="Cloud Solutions",
+                description="Manage CI/CD pipelines.",
+                salary_currency="INVALID_LONG",
+            )
+
+    def test_inverted_salary_range_raises(self) -> None:
+        with pytest.raises(ValidationError) as exc:
+            JobCreate(
+                title="DevOps Engineer",
+                company_name="Cloud Solutions",
+                description="Manage CI/CD pipelines.",
+                min_salary=150000.0,
+                max_salary=100000.0,
+            )
+        assert "min_salary cannot be greater than max_salary" in str(exc.value)
+
+    def test_equal_salary_range_is_valid(self) -> None:
+        job = JobCreate(
+            title="DevOps Engineer",
+            company_name="Cloud Solutions",
+            description="Manage CI/CD pipelines.",
+            min_salary=100000.0,
+            max_salary=100000.0,
+        )
+        assert job.min_salary == 100000.0
+        assert job.max_salary == 100000.0
+
+    def test_negative_salary_raises(self) -> None:
+        with pytest.raises(ValidationError):
+            JobCreate(
+                title="DevOps Engineer",
+                company_name="Cloud Solutions",
+                description="Manage CI/CD pipelines.",
+                min_salary=-500.0,
+            )
+
+    def test_job_update_salary_range_validation(self) -> None:
+        # Valid update
+        update = JobUpdate(min_salary=80000.0, max_salary=120000.0)
+        assert update.min_salary == 80000.0
+
+        # Inverted update raises
+        with pytest.raises(ValidationError):
+            JobUpdate(min_salary=150000.0, max_salary=100000.0)
