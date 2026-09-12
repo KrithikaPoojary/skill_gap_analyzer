@@ -9,6 +9,7 @@ from app.schemas.enums import (
     ExperienceLevel,
     SourcePlatform,
 )
+from app.schemas.skill import JobSkillCreate, JobSkillRead
 
 
 class JobBase(BaseModel):
@@ -59,7 +60,10 @@ class JobBase(BaseModel):
 class JobCreate(JobBase):
     """Payload for creating a new job posting."""
 
-    pass
+    skills: list[JobSkillCreate] = Field(
+        default_factory=list,
+        description="Associated skill requirements",
+    )
 
 
 class JobUpdate(BaseModel):
@@ -79,6 +83,10 @@ class JobUpdate(BaseModel):
     source_url: str | None = Field(None, max_length=500)
     source_platform: SourcePlatform | None = None
     is_active: bool | None = None
+    skills: list[JobSkillCreate] | None = Field(
+        None,
+        description="Replace skill requirements if provided",
+    )
 
     @field_validator("salary_currency")
     @classmethod
@@ -114,4 +122,7 @@ class JobInDB(JobBase):
 class JobRead(JobInDB):
     """Public client response schema for a job posting."""
 
-    pass
+    job_skills: list[JobSkillRead] = Field(
+        default_factory=list,
+        description="Associated skill requirements",
+    )

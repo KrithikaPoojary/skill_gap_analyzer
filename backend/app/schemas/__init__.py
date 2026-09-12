@@ -14,6 +14,12 @@ from app.schemas.job import (
     JobUpdate,
 )
 from app.schemas.response import APIResponse, ok
+from app.schemas.skill import (
+    JobSkillBase,
+    JobSkillCreate,
+    JobSkillRead,
+    SkillSummary,
+)
 
 __all__ = [
     "APIResponse",
@@ -27,4 +33,8 @@ __all__ = [
     "JobUpdate",
     "JobInDB",
     "JobRead",
+    "SkillSummary",
+    "JobSkillBase",
+    "JobSkillCreate",
+    "JobSkillRead",
 ]
