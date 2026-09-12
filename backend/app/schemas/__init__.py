@@ -13,6 +13,12 @@ from app.schemas.job import (
     JobRead,
     JobUpdate,
 )
+from app.schemas.job_filter import JobFilterParams
+from app.schemas.pagination import (
+    PaginatedResponse,
+    PaginationMeta,
+    PaginationParams,
+)
 from app.schemas.response import APIResponse, ok
 from app.schemas.skill import (
     JobSkillBase,
@@ -37,4 +43,8 @@ __all__ = [
     "JobSkillBase",
     "JobSkillCreate",
     "JobSkillRead",
+    "PaginationParams",
+    "PaginationMeta",
+    "PaginatedResponse",
+    "JobFilterParams",
 ]
