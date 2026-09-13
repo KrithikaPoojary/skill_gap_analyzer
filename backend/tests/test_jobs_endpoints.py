@@ -115,3 +115,32 @@ class TestJobsEndpoints:
         del_resp = api_client.delete(f"/api/v1/jobs/{job_id}")
         assert del_resp.status_code == 200
         assert del_resp.json()["data"]["is_active"] is False
+
+    def test_ingest_batch_endpoint(self, api_client: TestClient) -> None:
+        batch_payload = {
+            "records": [
+                {
+                    "title": "Data Engineer II",
+                    "company_name": "Stripe",
+                    "location": "San Francisco, CA",
+                    "description": "Building payments analytics data pipelines.",
+                    "skills": [{"name": "SQL", "is_required": True}],
+                }
+            ],
+            "batch_size": 10,
+            "dry_run": False,
+        }
+        response = api_client.post("/api/v1/jobs/ingest", json=batch_payload)
+        assert response.status_code == 200
+        data = response.json()["data"]
+        assert data["total_records"] == 1
+        assert data["inserted_records"] == 1
+
+    def test_get_ingestion_telemetry_endpoint(self, api_client: TestClient) -> None:
+        response = api_client.get("/api/v1/jobs/ingest/telemetry")
+        assert response.status_code == 200
+        body = response.json()
+        assert body["success"] is True
+        assert "recent_runs" in body["data"]
+        assert "summary" in body["data"]
+

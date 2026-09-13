@@ -4,7 +4,11 @@ Provides CRUD endpoints for managing job market postings with
 full pagination, filtering, validation, and soft-delete support.
 """
 
+from typing import Any
+import uuid
+
 from fastapi import APIRouter, HTTPException, Query, status
+from pydantic import BaseModel, Field
 
 from app.api.deps import DbSession
 from app.schemas.enums import EmploymentType, ExperienceLevel
@@ -12,9 +16,19 @@ from app.schemas.job import JobCreate, JobRead, JobUpdate
 from app.schemas.job_filter import JobFilterParams
 from app.schemas.pagination import PaginatedResponse, PaginationParams
 from app.schemas.response import ok
+from app.services.ingestion_service import ingestion_service
+from app.services.ingestion_telemetry import ingestion_telemetry
 from app.services.job_service import job_service
 
 router = APIRouter(prefix="/jobs", tags=["Job Postings"])
+
+
+class IngestBatchPayload(BaseModel):
+    """Payload for batch ingesting job records via API."""
+
+    records: list[dict[str, Any]] = Field(default_factory=list, description="Raw job postings to ingest")
+    batch_size: int = Field(50, ge=1, le=500, description="Commit batch size")
+    dry_run: bool = Field(False, description="Simulate without persisting")
 
 
 @router.post(
@@ -68,6 +82,51 @@ def list_jobs(
     )
     result = job_service.get_paginated(db, params=params, filters=filters)
     return ok(data=result.model_dump()).model_dump()
+
+
+@router.post(
+    "/ingest",
+    summary="Batch ingest raw job postings",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def ingest_jobs_batch(
+    payload: IngestBatchPayload,
+    db: DbSession,
+) -> dict:
+    """Batch ingest a list of raw job records with automatic normalization and deduplication."""
+    run_id = f"run_{uuid.uuid4().hex[:8]}"
+    report = ingestion_service.ingest_records(
+        db,
+        records=payload.records,
+        batch_size=payload.batch_size,
+        dry_run=payload.dry_run,
+    )
+    if not payload.dry_run:
+        ingestion_telemetry.record_run(
+            run_id=run_id,
+            source_name="api_batch_upload",
+            total=report.total_records,
+            inserted=report.inserted_records,
+            skipped=report.skipped_records,
+            errors=report.error_records,
+            duration=report.duration_seconds,
+        )
+    return ok(data=report.to_dict()).model_dump()
+
+
+@router.get(
+    "/ingest/telemetry",
+    summary="Get recent ingestion telemetry metrics",
+    response_model=dict,
+)
+def get_ingestion_telemetry(
+    limit: int = Query(10, ge=1, le=50, description="Max runs to return"),
+) -> dict:
+    """Retrieve history and summary metrics for recent dataset ingestion runs."""
+    recent = ingestion_telemetry.get_recent(limit=limit)
+    stats = ingestion_telemetry.get_summary_stats()
+    return ok(data={"recent_runs": recent, "summary": stats}).model_dump()
 
 
 @router.get(
