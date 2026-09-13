@@ -117,7 +117,44 @@ def main() -> int:
     )
     log_step("Repository Layer Instantiation", repos_ok, "User, Job, Skill, Role repos active")
 
-    # 6. Run Pytest Suite
+    # 6. Dataset Files Verification
+    try:
+        json_ds = os.path.join(backend_root, "data", "jobs_dataset.json")
+        csv_ds = os.path.join(backend_root, "data", "jobs_dataset.csv")
+        files_exist = os.path.exists(json_ds) and os.path.exists(csv_ds)
+        size_kb = (os.path.getsize(json_ds) // 1024) if files_exist else 0
+        log_step("Dataset Artifacts Verification", files_exist, f"JSON ({size_kb} KB) & CSV available")
+        if not files_exist:
+            all_passed = False
+    except Exception as exc:
+        log_step("Dataset Artifacts Verification", False, str(exc))
+        all_passed = False
+
+    # 7. Database Population Health
+    try:
+        from app.db.session import SessionLocal
+        from app.models.job import JobPosting
+        from app.models.skill import Skill
+        from app.models.associations import JobSkill
+
+        with SessionLocal() as db:
+            j_cnt = db.query(JobPosting).count()
+            s_cnt = db.query(Skill).count()
+            l_cnt = db.query(JobSkill).count()
+
+        pop_ok = j_cnt >= 500 and s_cnt >= 50 and l_cnt >= 1500
+        log_step(
+            "Database Ingestion & Population",
+            pop_ok,
+            f"{j_cnt} jobs, {s_cnt} skills, {l_cnt} links",
+        )
+        if not pop_ok:
+            all_passed = False
+    except Exception as exc:
+        log_step("Database Ingestion & Population", False, str(exc))
+        all_passed = False
+
+    # 8. Run Pytest Suite
     print("\n  Running full test suite...")
     venv_python = sys.executable
     result = subprocess.run(
