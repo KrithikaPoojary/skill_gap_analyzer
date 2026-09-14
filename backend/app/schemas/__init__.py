@@ -20,6 +20,15 @@ from app.schemas.pagination import (
     PaginationParams,
 )
 from app.schemas.response import APIResponse, ok
+from app.schemas.analytics import (
+    DistributionStatsSchema,
+    LocationDistributionSchema,
+    MarketOverviewSchema,
+    RemoteWorkSummarySchema,
+    RoleDistributionSchema,
+    SalaryBenchmarkSchema,
+    SkillDemandSchema,
+)
 from app.schemas.skill import (
     JobSkillBase,
     JobSkillCreate,
@@ -28,6 +37,13 @@ from app.schemas.skill import (
 )
 
 __all__ = [
+    "DistributionStatsSchema",
+    "SkillDemandSchema",
+    "RoleDistributionSchema",
+    "SalaryBenchmarkSchema",
+    "LocationDistributionSchema",
+    "RemoteWorkSummarySchema",
+    "MarketOverviewSchema",
     "APIResponse",
     "ok",
     "EmploymentType",
