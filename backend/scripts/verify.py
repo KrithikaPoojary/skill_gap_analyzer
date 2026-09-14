@@ -154,7 +154,33 @@ def main() -> int:
         log_step("Database Ingestion & Population", False, str(exc))
         all_passed = False
 
-    # 8. Run Pytest Suite
+    # 8. Market Analytics Pipeline Validation
+    try:
+        from app.db.session import SessionLocal
+        from app.services.analytics_service import analytics_service
+
+        with SessionLocal() as db:
+            overview = analytics_service.get_market_overview(db)
+
+        analytics_ok = (
+            overview.total_active_jobs >= 500
+            and len(overview.top_skills) > 0
+            and len(overview.top_roles) > 0
+            and overview.overall_remote_pct > 0.0
+        )
+        detail = (
+            f"Overview active: {len(overview.top_skills)} top skills, {overview.overall_remote_pct:.1f}% remote"
+            if analytics_ok
+            else "Analytics metrics below expectations"
+        )
+        log_step("Market Analytics Pipeline", analytics_ok, detail)
+        if not analytics_ok:
+            all_passed = False
+    except Exception as exc:
+        log_step("Market Analytics Pipeline", False, str(exc))
+        all_passed = False
+
+    # 9. Run Pytest Suite
     print("\n  Running full test suite...")
     venv_python = sys.executable
     result = subprocess.run(
