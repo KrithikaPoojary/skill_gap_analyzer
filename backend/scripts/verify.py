@@ -1,12 +1,16 @@
 """System Verification Script.
 
 Validates:
-1. Application settings and configuration loading.
-2. Database engine connectivity and ping latency.
-3. Complete schema inspection across all ORM tables.
-4. Alembic migration head alignment.
-5. Repository layer instantiation.
-6. Full pytest test suite execution and test count reporting.
+1.  Application settings and configuration loading.
+2.  Database engine connectivity and ping latency.
+3.  Complete schema inspection across all ORM tables.
+4.  Alembic migration head alignment.
+5.  Repository layer instantiation.
+6.  Dataset file artifacts.
+7.  Database ingestion & population health.
+8.  Market analytics pipeline.
+9.  Skill Extraction Engine (NLP pipeline smoke test).
+10. Full pytest test suite execution and test count reporting.
 """
 
 from datetime import datetime, timezone
@@ -180,7 +184,45 @@ def main() -> int:
         log_step("Market Analytics Pipeline", False, str(exc))
         all_passed = False
 
-    # 9. Run Pytest Suite
+    # 9. Skill Extraction Engine
+    try:
+        import time
+        from app.services.skill_extractor import skill_extractor
+        from app.services.extractor.batch_extractor import batch_skill_extractor
+
+        probe_text = (
+            "Senior Backend Engineer: 5+ years Python, FastAPI, PostgreSQL, Redis, "
+            "Docker, Kubernetes, and AWS cloud platform."
+        )
+        t0 = time.perf_counter()
+        extracted = skill_extractor.extract_skills(probe_text)
+        elapsed_ms = round((time.perf_counter() - t0) * 1000.0, 2)
+
+        required_skills = {"Python", "Docker", "AWS"}
+        found_names = {s.name for s in extracted}
+        extraction_ok = required_skills.issubset(found_names)
+
+        # Batch smoke: two documents
+        batch_report = batch_skill_extractor.extract_batch([
+            ("doc-a", "Python and FastAPI developer needed."),
+            ("doc-b", "React and TypeScript frontend engineer."),
+        ])
+        batch_ok = batch_report.total_documents == 2 and batch_report.total_skills_extracted >= 2
+
+        skill_ok = extraction_ok and batch_ok
+        detail = (
+            f"{len(extracted)} skills in {elapsed_ms} ms; batch: {batch_report.total_skills_extracted} skills"
+            if skill_ok
+            else f"Missing: {required_skills - found_names}"
+        )
+        log_step("Skill Extraction Engine", skill_ok, detail)
+        if not skill_ok:
+            all_passed = False
+    except Exception as exc:
+        log_step("Skill Extraction Engine", False, str(exc))
+        all_passed = False
+
+    # 10. Run Pytest Suite
     print("\n  Running full test suite...")
     venv_python = sys.executable
     result = subprocess.run(
