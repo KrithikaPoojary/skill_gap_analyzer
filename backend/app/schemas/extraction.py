@@ -15,6 +15,10 @@ class SkillExtractionItemSchema(BaseModel):
     confidence: float = Field(..., ge=0.0, le=1.0, description="Extraction confidence score (0.0 to 1.0)")
     occurrences: int = Field(..., ge=1, description="Number of times skill or its aliases appeared")
     matched_variants: list[str] = Field(default_factory=list, description="Specific terms found in the text")
+    context_snippets: list[str] = Field(
+        default_factory=list,
+        description="Short surrounding text excerpts where the skill was detected",
+    )
 
 
 class SkillExtractionRequest(BaseModel):
@@ -47,7 +51,7 @@ class BatchExtractionDocument(BaseModel):
 class BatchExtractionRequest(BaseModel):
     """Request payload for extracting skills from multiple documents simultaneously."""
 
-    documents: list[BatchExtractionDocument] = Field(..., min_length=1, max_length=100)
+    documents: list[BatchExtractionDocument] = Field(default_factory=list, max_length=100)
     min_confidence: float = Field(0.60, ge=0.10, le=1.0)
 
 

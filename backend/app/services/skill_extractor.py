@@ -6,12 +6,29 @@ deduplicates aliases to canonical taxonomy entries, and computes confidence scor
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from app.services.extractor.confidence_scorer import confidence_scorer
 from app.services.extractor.pattern_engine import RawSkillMatch, skill_pattern_engine
 from app.services.extractor.text_preprocessor import extractor_text_preprocessor
+
+# Characters of surrounding context to capture per match occurrence
+_SNIPPET_CONTEXT_CHARS = 60
+_MAX_SNIPPETS = 3
+
+
+def _extract_snippet(text: str, start: int, end: int) -> str:
+    """Return a short surrounding context string for a match span."""
+    s = max(0, start - _SNIPPET_CONTEXT_CHARS)
+    e = min(len(text), end + _SNIPPET_CONTEXT_CHARS)
+    snippet = text[s:e].strip()
+    # Ellipsis when truncated
+    if s > 0:
+        snippet = "…" + snippet
+    if e < len(text):
+        snippet = snippet + "…"
+    return snippet
 
 
 @dataclass(frozen=True)
@@ -23,9 +40,17 @@ class ExtractedSkill:
     confidence: float
     occurrences: int
     matched_variants: list[str]
+    context_snippets: list[str] = field(default_factory=list)
 
     def to_dict(self) -> dict[str, Any]:
-        return asdict(self)
+        return {
+            "name": self.name,
+            "category": self.category,
+            "confidence": self.confidence,
+            "occurrences": self.occurrences,
+            "matched_variants": self.matched_variants,
+            "context_snippets": self.context_snippets,
+        }
 
 
 class SkillExtractor:
@@ -67,6 +92,12 @@ class SkillExtractor:
             occurrences = len(match_list)
             variants = list({m.matched_text for m in match_list})
 
+            # Capture surrounding context for first N occurrences
+            snippets = [
+                _extract_snippet(cleaned_text, m.start, m.end)
+                for m in match_list[:_MAX_SNIPPETS]
+            ]
+
             # Calculate score using first match and total occurrences
             score = confidence_scorer.score_match(
                 first_match,
@@ -87,6 +118,7 @@ class SkillExtractor:
                         confidence=score,
                         occurrences=occurrences,
                         matched_variants=variants,
+                        context_snippets=snippets,
                     )
                 )
 
