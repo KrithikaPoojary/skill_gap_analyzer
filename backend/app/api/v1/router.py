@@ -13,6 +13,7 @@ from fastapi import APIRouter
 from app.api.v1.endpoints.analytics import router as analytics_router
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.endpoints.jobs import router as jobs_router
+from app.api.v1.endpoints.skills import router as skills_router
 
 api_v1_router = APIRouter()
 
@@ -22,3 +23,4 @@ api_v1_router = APIRouter()
 api_v1_router.include_router(health_router)
 api_v1_router.include_router(jobs_router)
 api_v1_router.include_router(analytics_router)
+api_v1_router.include_router(skills_router)

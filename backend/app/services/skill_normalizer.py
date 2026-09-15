@@ -37,7 +37,13 @@ TAXONOMY_CATALOG: list[SkillDefinition] = [
     SkillDefinition("PHP", SkillCategory.LANGUAGE, ("php7", "php8")),
     SkillDefinition("Kotlin", SkillCategory.LANGUAGE, ("kotlin-lang",)),
     SkillDefinition("Swift", SkillCategory.LANGUAGE, ("swiftlang", "apple swift")),
+    SkillDefinition("Objective-C", SkillCategory.LANGUAGE, ("objc", "objective c")),
+    SkillDefinition("Haskell", SkillCategory.LANGUAGE, ()),
+    SkillDefinition("Erlang", SkillCategory.LANGUAGE, ()),
+    SkillDefinition("Scala", SkillCategory.LANGUAGE, ("scala lang",)),
     SkillDefinition("SQL", SkillCategory.LANGUAGE, ("structured query language", "ansi sql")),
+    SkillDefinition("HTML", SkillCategory.LANGUAGE, ("html5", "hypertext markup language")),
+    SkillDefinition("CSS", SkillCategory.LANGUAGE, ("css3", "cascading style sheets")),
     SkillDefinition("Bash", SkillCategory.LANGUAGE, ("shell", "sh", "zsh", "bash scripting")),
 
     # Frameworks & Libraries
@@ -47,7 +53,7 @@ TAXONOMY_CATALOG: list[SkillDefinition] = [
     SkillDefinition("Flask", SkillCategory.FRAMEWORK, ()),
     SkillDefinition("Node.js", SkillCategory.FRAMEWORK, ("nodejs", "node", "node js")),
     SkillDefinition("Express.js", SkillCategory.FRAMEWORK, ("express", "expressjs")),
-    SkillDefinition("Next.js", SkillCategory.FRAMEWORK, ("nextjs", "next")),
+    SkillDefinition("Next.js", SkillCategory.FRAMEWORK, ("nextjs", "next.js", "next js")),
     SkillDefinition("Vue.js", SkillCategory.FRAMEWORK, ("vue", "vuejs", "vue 3")),
     SkillDefinition("Angular", SkillCategory.FRAMEWORK, ("angularjs", "angular 2+")),
     SkillDefinition("Spring Boot", SkillCategory.FRAMEWORK, ("springboot", "spring", "spring framework")),
@@ -55,6 +61,10 @@ TAXONOMY_CATALOG: list[SkillDefinition] = [
     SkillDefinition("NestJS", SkillCategory.FRAMEWORK, ("nest.js", "nest")),
     SkillDefinition("Tailwind CSS", SkillCategory.FRAMEWORK, ("tailwind", "tailwindcss")),
     SkillDefinition("GraphQL", SkillCategory.FRAMEWORK, ("graphql api", "apollo")),
+    SkillDefinition("Xcode", SkillCategory.FRAMEWORK, ("xcode ide",)),
+    SkillDefinition("Firebase", SkillCategory.FRAMEWORK, ("google firebase", "firestore", "firebase auth")),
+    SkillDefinition("Pandas", SkillCategory.AI_ML, ()),
+    SkillDefinition("NumPy", SkillCategory.AI_ML, ("numpy array",)),
 
     # Databases
     SkillDefinition("PostgreSQL", SkillCategory.DATABASE, ("postgres", "postgresql db", "psql")),
@@ -68,14 +78,16 @@ TAXONOMY_CATALOG: list[SkillDefinition] = [
     SkillDefinition("Snowflake", SkillCategory.DATABASE, ("snowflake db",)),
 
     # Cloud & DevOps
-    SkillDefinition("AWS", SkillCategory.CLOUD_DEVOPS, ("amazon web services", "amazon aws")),
+    SkillDefinition("AWS", SkillCategory.CLOUD_DEVOPS, ("amazon web services", "amazon aws", "aws amplify")),
     SkillDefinition("Azure", SkillCategory.CLOUD_DEVOPS, ("microsoft azure", "azure cloud")),
     SkillDefinition("GCP", SkillCategory.CLOUD_DEVOPS, ("google cloud", "google cloud platform")),
     SkillDefinition("Docker", SkillCategory.CLOUD_DEVOPS, ("docker containers", "dockerfile")),
     SkillDefinition("Kubernetes", SkillCategory.CLOUD_DEVOPS, ("k8s", "kube")),
-    SkillDefinition("Terraform", SkillCategory.CLOUD_DEVOPS, ("hashicorp terraform", "tf")),
+    SkillDefinition("Terraform", SkillCategory.CLOUD_DEVOPS, ("hashicorp terraform",)),
     SkillDefinition("Ansible", SkillCategory.CLOUD_DEVOPS, ()),
-    SkillDefinition("CI/CD", SkillCategory.CLOUD_DEVOPS, ("cicd", "continuous integration", "github actions", "gitlab ci", "jenkins")),
+    SkillDefinition("Jenkins", SkillCategory.CLOUD_DEVOPS, ("jenkins ci", "jenkins cd")),
+    SkillDefinition("GitHub Actions", SkillCategory.CLOUD_DEVOPS, ("github actions ci",)),
+    SkillDefinition("CI/CD", SkillCategory.CLOUD_DEVOPS, ("cicd", "continuous integration", "continuous delivery")),
     SkillDefinition("Linux", SkillCategory.CLOUD_DEVOPS, ("ubuntu", "debian", "redhat", "centos")),
     SkillDefinition("Git", SkillCategory.CLOUD_DEVOPS, ("github", "gitlab", "version control")),
     SkillDefinition("Kafka", SkillCategory.CLOUD_DEVOPS, ("apache kafka", "kafka streaming")),
@@ -83,15 +95,16 @@ TAXONOMY_CATALOG: list[SkillDefinition] = [
 
     # AI & Machine Learning
     SkillDefinition("Machine Learning", SkillCategory.AI_ML, ("ml", "applied ml")),
-    SkillDefinition("Deep Learning", SkillCategory.AI_ML, ("neural networks",)),
+    SkillDefinition("Deep Learning", SkillCategory.AI_ML, ("neural networks", "deep neural network")),
     SkillDefinition("PyTorch", SkillCategory.AI_ML, ("torch",)),
-    SkillDefinition("TensorFlow", SkillCategory.AI_ML, ("tf", "keras")),
-    SkillDefinition("Scikit-Learn", SkillCategory.AI_ML, ("sklearn", "scikit learn")),
-    SkillDefinition("Pandas", SkillCategory.AI_ML, ()),
-    SkillDefinition("NumPy", SkillCategory.AI_ML, ()),
-    SkillDefinition("NLP", SkillCategory.AI_ML, ("natural language processing", "llm", "transformers", "huggingface")),
+    SkillDefinition("TensorFlow", SkillCategory.AI_ML, ("keras",)),
+    SkillDefinition("Scikit-learn", SkillCategory.AI_ML, ("sklearn", "scikit learn", "scikit-learn")),
+    SkillDefinition("BERT", SkillCategory.AI_ML, ("bert model", "distilbert", "roberta")),
+    SkillDefinition("Hugging Face", SkillCategory.AI_ML, ("huggingface", "hugging face transformers", "transformers")),
+    SkillDefinition("NLP", SkillCategory.AI_ML, ("natural language processing", "llm", "large language model")),
     SkillDefinition("Computer Vision", SkillCategory.AI_ML, ("cv", "opencv")),
     SkillDefinition("LangChain", SkillCategory.AI_ML, ("langchain ai", "rag")),
+    SkillDefinition("Tableau", SkillCategory.AI_ML, ("tableau desktop",)),
 
     # Testing & QA
     SkillDefinition("Pytest", SkillCategory.TESTING, ("pytest runner",)),

@@ -33,6 +33,13 @@ _BACKEND_ROOT = Path(__file__).resolve().parent.parent
 if str(_BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(_BACKEND_ROOT))
 
+# Force UTF-8 output so box-drawing / tick characters work on Windows
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 from app.services.extractor.batch_extractor import batch_skill_extractor  # noqa: E402
 from app.services.skill_extractor import skill_extractor  # noqa: E402
 
@@ -59,9 +66,9 @@ def _colour(text: str, code: str) -> str:
 
 def _header(title: str) -> None:
     width = 62
-    print(_colour("═" * width, _CYAN))
+    print(_colour("=" * width, _CYAN))
     print(_colour(f"  {title}", _BOLD + _CYAN))
-    print(_colour("═" * width, _CYAN))
+    print(_colour("=" * width, _CYAN))
 
 
 def _confidence_bar(score: float, width: int = 20) -> str:
@@ -81,11 +88,11 @@ def _print_results(results: list, elapsed_ms: float, source_label: str = "") -> 
         print(_colour(f"\n  Source: {source_label}", _DIM))
 
     if not results:
-        print(_colour("  ⚠  No skills extracted from the provided text.", _YELLOW))
+        print(_colour("  [!]  No skills extracted from the provided text.", _YELLOW))
         return
 
     print(f"\n  {'#':<4} {'Skill':<28} {'Conf':<28} {'Freq'}")
-    print(_colour("  " + "─" * 58, _DIM))
+    print(_colour("  " + "-" * 58, _DIM))
 
     for i, skill in enumerate(results, start=1):
         bar = _confidence_bar(skill.confidence)
@@ -99,7 +106,7 @@ def _print_results(results: list, elapsed_ms: float, source_label: str = "") -> 
             print(_colour(f"       \"{snippet}…\"", _DIM))
 
     print()
-    print(_colour(f"  ✔  {len(results)} skill(s) extracted in {elapsed_ms:.1f} ms", _GREEN))
+    print(_colour(f"  [ok]  {len(results)} skill(s) extracted in {elapsed_ms:.1f} ms", _GREEN))
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -146,10 +153,10 @@ def run_batch(batch_dir: Path, min_confidence: float) -> None:
             bar = _confidence_bar(min(freq / top10[0][1], 1.0), width=16)
             print(f"    {rank:>2}. {name:<25} {bar}  (mentioned in {freq} doc(s))")
 
-    print(_colour("\n  Per-document summary:", _BOLD))
+    print(_colour(f"\n  Per-document summary:", _BOLD))
     for dr in report.document_results:
         status = _colour(f"{dr.total_skills} skills", _GREEN if dr.total_skills > 0 else _YELLOW)
-        print(f"    {dr.doc_id:<35} → {status}")
+        print(f"    {dr.doc_id:<35} -> {status}")
 
     print()
 
