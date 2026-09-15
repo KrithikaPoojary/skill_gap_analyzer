@@ -23,7 +23,7 @@ class TestSingleExtractEndpoint:
         assert response.status_code == 200
 
         body = response.json()
-        assert body["status"] == "ok"
+        assert body["success"] is True
 
         data = body["data"]
         assert "total_extracted" in data
@@ -108,7 +108,7 @@ class TestBatchExtractEndpoint:
         assert response.status_code == 200
 
         body = response.json()
-        assert body["status"] == "ok"
+        assert body["success"] is True
 
         data = body["data"]
         assert data["total_documents"] == 3
