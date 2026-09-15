@@ -29,6 +29,15 @@ from app.schemas.analytics import (
     SalaryBenchmarkSchema,
     SkillDemandSchema,
 )
+from app.schemas.extraction import (
+    BatchExtractionDocument,
+    BatchExtractionRequest,
+    BatchExtractionResponse,
+    BatchExtractionResultItem,
+    SkillExtractionItemSchema,
+    SkillExtractionRequest,
+    SkillExtractionResponse,
+)
 from app.schemas.skill import (
     JobSkillBase,
     JobSkillCreate,
@@ -37,6 +46,13 @@ from app.schemas.skill import (
 )
 
 __all__ = [
+    "BatchExtractionDocument",
+    "BatchExtractionRequest",
+    "BatchExtractionResponse",
+    "BatchExtractionResultItem",
+    "SkillExtractionItemSchema",
+    "SkillExtractionRequest",
+    "SkillExtractionResponse",
     "DistributionStatsSchema",
     "SkillDemandSchema",
     "RoleDistributionSchema",
