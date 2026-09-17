@@ -11,6 +11,7 @@ Adding a new feature area:
 from fastapi import APIRouter
 
 from app.api.v1.endpoints.analytics import router as analytics_router
+from app.api.v1.endpoints.gap_analysis import router as gap_analysis_router
 from app.api.v1.endpoints.health import router as health_router
 from app.api.v1.endpoints.jobs import router as jobs_router
 from app.api.v1.endpoints.profile import router as profile_router
@@ -26,3 +27,4 @@ api_v1_router.include_router(jobs_router)
 api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(skills_router)
 api_v1_router.include_router(profile_router)
+api_v1_router.include_router(gap_analysis_router)
