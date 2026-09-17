@@ -10,7 +10,8 @@ Validates:
 7.  Database ingestion & population health.
 8.  Market analytics pipeline.
 9.  Skill Extraction Engine (NLP pipeline smoke test).
-10. Full pytest test suite execution and test count reporting.
+10. User Profile & Gap Analysis Services (gap analysis + recommendation smoke test).
+11. Full pytest test suite execution and test count reporting.
 """
 
 from datetime import datetime, timezone
@@ -222,7 +223,54 @@ def main() -> int:
         log_step("Skill Extraction Engine", False, str(exc))
         all_passed = False
 
-    # 10. Run Pytest Suite
+    # 10. User Profile & Gap Analysis Services
+    try:
+        from app.services.skill_gap_analyzer import SkillWeight, skill_gap_analyzer
+        from app.services.gap_analysis_service import gap_analysis_service
+        from app.services.recommendation_service import recommendation_service
+        from app.db.session import SessionLocal
+
+        # Compute smoke gap analysis
+        test_weights = [
+            SkillWeight("Python", 1.0),
+            SkillWeight("FastAPI", 0.9),
+            SkillWeight("Docker", 0.8),
+        ]
+        rep = skill_gap_analyzer.analyse(
+            profile_skills=["Python", "FastAPI"],
+            required_skills=test_weights,
+            role_name="Smoke Test Role",
+        )
+        analyzer_ok = (
+            rep.coverage_pct > 60.0
+            and "Python" in rep.matched_skills
+            and "FastAPI" in rep.matched_skills
+            and any(s.name == "Docker" for s in rep.missing_skills)
+        )
+
+        with SessionLocal() as db:
+            # Test recommendation ranking
+            recs = recommendation_service.recommend_for_skills(
+                db,
+                skills=["Python", "PostgreSQL"],
+                limit=3,
+            )
+            # Service call should succeed without unhandled exceptions
+            services_ok = analyzer_ok and isinstance(recs, list)
+
+        detail = (
+            f"Gap score: {rep.weighted_gap_score * 100:.1f}%, {len(recs)} target roles evaluated"
+            if services_ok
+            else "Gap analysis verification mismatch"
+        )
+        log_step("Profile & Gap Analysis Services", services_ok, detail)
+        if not services_ok:
+            all_passed = False
+    except Exception as exc:
+        log_step("Profile & Gap Analysis Services", False, str(exc))
+        all_passed = False
+
+    # 11. Run Pytest Suite
     print("\n  Running full test suite...")
     venv_python = sys.executable
     result = subprocess.run(
