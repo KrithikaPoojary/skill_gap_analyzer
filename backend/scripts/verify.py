@@ -11,7 +11,8 @@ Validates:
 8.  Market analytics pipeline.
 9.  Skill Extraction Engine (NLP pipeline smoke test).
 10. User Profile & Gap Analysis Services (gap analysis + recommendation smoke test).
-11. Full pytest test suite execution and test count reporting.
+11. Learning Roadmap Generator (DAG prerequisites + resource catalog + curriculum smoke test).
+12. Full pytest test suite execution and test count reporting.
 """
 
 from datetime import datetime, timezone
@@ -270,7 +271,47 @@ def main() -> int:
         log_step("Profile & Gap Analysis Services", False, str(exc))
         all_passed = False
 
-    # 11. Run Pytest Suite
+    # 11. Learning Roadmap Generator
+    try:
+        from app.services.roadmap.prerequisite_graph import skill_prerequisite_graph
+        from app.services.roadmap.resource_catalog import learning_resource_catalog
+        from app.services.roadmap.roadmap_generator import roadmap_generator
+
+        # Smoke check prerequisite sort
+        ordered = skill_prerequisite_graph.sort_skills(["FastAPI", "Python"])
+        prereq_ok = ordered == ["Python", "FastAPI"]
+
+        # Smoke check resource catalog
+        meta = learning_resource_catalog.get_skill_metadata("FastAPI")
+        catalog_ok = meta.estimated_hours > 0 and len(meta.resources) > 0
+
+        # Smoke check roadmap generation
+        smoke_rm = roadmap_generator.generate(
+            missing_skills=["Python", "FastAPI", "Docker"],
+            role_title="Backend Developer",
+            weekly_commitment_hours=10,
+        )
+        generator_ok = (
+            smoke_rm.total_skills == 3
+            and smoke_rm.estimated_weeks > 0
+            and len(smoke_rm.phases) >= 2
+            and bool(smoke_rm.phases[0].capstone_project_title)
+        )
+
+        roadmap_ok = prereq_ok and catalog_ok and generator_ok
+        detail = (
+            f"{smoke_rm.total_skills} skills in {len(smoke_rm.phases)} phases, {smoke_rm.estimated_weeks} weeks pacing"
+            if roadmap_ok
+            else "Roadmap verification mismatch"
+        )
+        log_step("Learning Roadmap Generator", roadmap_ok, detail)
+        if not roadmap_ok:
+            all_passed = False
+    except Exception as exc:
+        log_step("Learning Roadmap Generator", False, str(exc))
+        all_passed = False
+
+    # 12. Run Pytest Suite
     print("\n  Running full test suite...")
     venv_python = sys.executable
     result = subprocess.run(
