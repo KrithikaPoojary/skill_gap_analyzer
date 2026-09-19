@@ -12,7 +12,8 @@ Validates:
 9.  Skill Extraction Engine (NLP pipeline smoke test).
 10. User Profile & Gap Analysis Services (gap analysis + recommendation smoke test).
 11. Learning Roadmap Generator (DAG prerequisites + resource catalog + curriculum smoke test).
-12. Full pytest test suite execution and test count reporting.
+12. Resume Ingestion Pipeline (DocumentParser + ResumeSegmenter + ResumeIngestionService smoke test).
+13. Full pytest test suite execution and test count reporting.
 """
 
 from datetime import datetime, timezone
@@ -311,7 +312,64 @@ def main() -> int:
         log_step("Learning Roadmap Generator", False, str(exc))
         all_passed = False
 
-    # 12. Run Pytest Suite
+    # 12. Resume Ingestion Pipeline Smoke Test
+    try:
+        from app.services.document_parser import DocumentParser
+        from app.services.resume_segmenter import ResumeSegmenter
+        from app.services.resume_ingestion_service import ResumeIngestionService
+
+        resume_txt = (
+            "Alice Developer\n"
+            "alice@example.com\n"
+            "+1-555-000-1234\n"
+            "https://linkedin.com/in/alice\n"
+            "\n"
+            "Summary\n"
+            "Senior software engineer with 8 years of Python experience.\n"
+            "\n"
+            "Skills\n"
+            "Python, FastAPI, Docker, PostgreSQL, Redis\n"
+            "\n"
+            "Experience\n"
+            "Lead Engineer - Acme Corp (2018-Present)\n"
+            "Designed microservices architecture.\n"
+        ).encode("utf-8")
+
+        parser = DocumentParser()
+        raw_text = parser.parse_bytes(resume_txt, "smoke_test.txt")
+        parser_ok = "Python" in raw_text and len(raw_text) > 50
+
+        segmenter = ResumeSegmenter()
+        segments = segmenter.segment(raw_text)
+        segmenter_ok = (
+            "skills" in segments.sections
+            and "experience" in segments.sections
+            and segments.contact.email == "alice@example.com"
+            and "Python" in segments.skills_raw
+        )
+
+        svc = ResumeIngestionService(parser=parser, segmenter=segmenter)
+        result = svc.parse_only(resume_txt, "smoke_test.txt")
+        service_ok = (
+            result.char_count > 0
+            and "skills" in result.sections_found
+            and result.contact.email == "alice@example.com"
+            and len(result.skills_raw) >= 3
+        )
+
+        resume_ok = parser_ok and segmenter_ok and service_ok
+        detail = (
+            f"{len(result.sections_found)} sections, {len(result.skills_raw)} skills extracted"
+            if resume_ok else "Resume pipeline verification mismatch"
+        )
+        log_step("Resume Ingestion Pipeline", resume_ok, detail)
+        if not resume_ok:
+            all_passed = False
+    except Exception as exc:
+        log_step("Resume Ingestion Pipeline", False, str(exc))
+        all_passed = False
+
+    # 13. Run Pytest Suite
     print("\n  Running full test suite...")
     venv_python = sys.executable
     result = subprocess.run(
