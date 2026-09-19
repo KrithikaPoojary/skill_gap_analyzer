@@ -50,3 +50,13 @@ API docs at: `http://localhost:8000/docs`
 cd backend
 python -m pytest tests/ -v
 ```
+
+---
+
+## Resume Parsing CLI
+
+```bash
+# Parse a resume file and evaluate fit against a target role
+python scripts/parse_resume_cli.py --file path/to/resume.pdf --role "Backend Developer"
+```
+
