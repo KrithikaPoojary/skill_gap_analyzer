@@ -21,3 +21,8 @@ httpx==0.28.1
 # Database and Migrations (SQLAlchemy 2.0 ORM + Alembic)
 sqlalchemy>=2.0.0,<3.0.0
 alembic>=1.13.0,<2.0.0
+
+# Document Parsing – Resume Ingestion Pipeline (Day 10)
+pypdf>=4.0.0          # PDF text extraction
+python-docx>=1.1.0    # DOCX text extraction
+python-multipart>=0.0.9  # Multipart form-data for FastAPI file uploads
