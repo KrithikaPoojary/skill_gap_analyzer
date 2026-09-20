@@ -369,7 +369,47 @@ def main() -> int:
         log_step("Resume Ingestion Pipeline", False, str(exc))
         all_passed = False
 
-    # 13. Run Pytest Suite
+    # 13. User Authentication & JWT Security Pipeline Check
+    try:
+        import uuid
+        from app.core.security import hash_password, verify_password, create_access_token, decode_access_token
+        from app.db.session import SessionLocal
+        from app.schemas.auth import UserRegisterRequest
+        from app.services.auth_service import auth_service
+
+        pwd = "TestPassword123!"
+        hashed = hash_password(pwd)
+        pwd_ok = verify_password(pwd, hashed) and not verify_password("wrong", hashed)
+
+        db = SessionLocal()
+        try:
+            test_email = f"verify_{uuid.uuid4().hex[:8]}@example.com"
+            req = UserRegisterRequest(email=test_email, password=pwd, full_name="Verify User")
+            user = auth_service.register_user(db, req=req)
+            reg_ok = user.id is not None and user.email == test_email
+
+            authed_user = auth_service.authenticate(db, email=test_email, password=pwd)
+            auth_ok = authed_user is not None and authed_user.id == user.id
+
+            token = create_access_token(subject=user.id, extra_claims={"email": user.email})
+            payload = decode_access_token(token)
+            jwt_ok = str(payload.get("sub")) == str(user.id) and payload.get("email") == user.email
+
+            auth_pipeline_ok = pwd_ok and reg_ok and auth_ok and jwt_ok
+            detail = (
+                f"Argon2id pwd + DB user registration (id={user.id}) + JWT token validated"
+                if auth_pipeline_ok else "Auth pipeline check mismatch"
+            )
+            log_step("User Auth & JWT Pipeline", auth_pipeline_ok, detail)
+            if not auth_pipeline_ok:
+                all_passed = False
+        finally:
+            db.close()
+    except Exception as exc:
+        log_step("User Auth & JWT Pipeline", False, str(exc))
+        all_passed = False
+
+    # 14. Run Pytest Suite
     print("\n  Running full test suite...")
     venv_python = sys.executable
     result = subprocess.run(

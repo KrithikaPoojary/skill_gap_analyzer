@@ -60,3 +60,22 @@ python -m pytest tests/ -v
 python scripts/parse_resume_cli.py --file path/to/resume.pdf --role "Backend Developer"
 ```
 
+---
+
+## Authentication & User Management CLI
+
+```bash
+# Register a new user
+python scripts/auth_cli.py register --email alice@example.com --password "SecurePass123!" --name "Alice Smith"
+
+# Authenticate and receive a JWT bearer access token
+python scripts/auth_cli.py login --email alice@example.com --password "SecurePass123!"
+
+# Verify and inspect JWT token payload
+python scripts/auth_cli.py verify-token --token <JWT_ACCESS_TOKEN>
+
+# List all registered users
+python scripts/auth_cli.py list-users --json
+```
+
+
