@@ -26,3 +26,7 @@ alembic>=1.13.0,<2.0.0
 pypdf>=4.0.0          # PDF text extraction
 python-docx>=1.1.0    # DOCX text extraction
 python-multipart>=0.0.9  # Multipart form-data for FastAPI file uploads
+
+# Authentication & Security
+pyjwt>=2.8.0          # JWT encoding/decoding
+bcrypt>=4.0.0         # Secure password hashing

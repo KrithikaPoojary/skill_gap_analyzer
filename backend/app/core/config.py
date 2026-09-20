@@ -58,6 +58,13 @@ class Settings(BaseSettings):
     allowed_upload_extensions: list[str] = [".pdf", ".txt", ".docx"]
     upload_directory: str = "uploads"
 
+    # ------------------------------------------------------------------ #
+    # Authentication & Security
+    # ------------------------------------------------------------------ #
+    jwt_secret_key: str = "super-secret-dev-jwt-key-for-skill-gap-analyzer-change-in-prod"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 60 * 24  # 24 hours
+
 
 # Module-level singleton — import ``settings`` directly anywhere in the app.
 settings = Settings()
