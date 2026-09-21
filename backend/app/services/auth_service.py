@@ -106,6 +106,14 @@ class AuthService:
         logger.info("Password updated for user id=%d.", user.id)
         return True
 
+    def deactivate_account(self, db: Session, user: User) -> bool:
+        """Deactivate an active user account."""
+        user.is_active = False
+        db.add(user)
+        db.commit()
+        logger.info("Account deactivated for user id=%d.", user.id)
+        return True
+
 
 # Module-level singleton
 auth_service = AuthService()

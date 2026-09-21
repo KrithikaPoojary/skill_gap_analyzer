@@ -113,3 +113,19 @@ def change_password(
             detail=str(exc),
         ) from exc
     return {"message": "Password updated successfully."}
+
+
+@router.delete(
+    "/me",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Deactivate authenticated user's account",
+    description="Mark the current user's account as inactive.",
+)
+def deactivate_me(
+    current_user: CurrentActiveUser,
+    db: DbSession,
+) -> dict:
+    """Deactivate account for the current user."""
+    auth_service.deactivate_account(db, current_user)
+    return {"message": "Account deactivated successfully."}
