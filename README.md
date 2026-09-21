@@ -78,4 +78,22 @@ python scripts/auth_cli.py verify-token --token <JWT_ACCESS_TOKEN>
 python scripts/auth_cli.py list-users --json
 ```
 
+---
 
+## Authenticated Profile & Personalization API
+
+All endpoints require `Authorization: Bearer <token>`:
+
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/v1/profile/me` | `GET` | Retrieve full candidate profile with skills and target roles |
+| `/api/v1/profile/me` | `PUT` | Update headline, bio, experience, location, URLs |
+| `/api/v1/profile/me/skills` | `POST` | Claim individual skill with proficiency level |
+| `/api/v1/profile/me/skills/bulk` | `POST` | Bulk claim skills |
+| `/api/v1/profile/me/skills/{id}` | `DELETE` | Remove skill from profile |
+| `/api/v1/profile/me/stats` | `GET` | Aggregated user metrics and profile completeness |
+| `/api/v1/resume/upload-to-my-profile` | `POST` | Parse resume & auto-populate candidate profile |
+| `/api/v1/gap-analysis/me` | `GET` | Benchmark candidate skills against target role |
+| `/api/v1/roadmaps/me` | `POST` | Generate & persist custom learning roadmap |
+| `/api/v1/roadmaps/me` | `GET` | List all persisted learning roadmaps |
+| `/api/v1/auth/me` | `DELETE` | Deactivate candidate account |
