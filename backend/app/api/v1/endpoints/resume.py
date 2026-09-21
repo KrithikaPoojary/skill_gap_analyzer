@@ -12,7 +12,7 @@ import logging
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_db
+from app.api.deps import CurrentUser, DbSession, get_db
 from app.schemas.resume import ResumeIngestResponse, ResumeParseResponse
 from app.services.resume_ingestion_service import resume_ingestion_service
 
@@ -116,3 +116,42 @@ async def ingest_resume(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while ingesting the resume.",
         ) from exc
+
+
+@router.post(
+    "/upload-to-my-profile",
+    response_model=ResumeIngestResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Upload and ingest resume for authenticated user",
+    description="Extracts sections and contact info, syncs profile, and links skills for currently logged-in user.",
+)
+async def upload_to_my_profile(
+    current_user: CurrentUser,
+    db: DbSession,
+    file: UploadFile = File(..., description="Resume file (PDF, DOCX, or TXT/MD)."),
+) -> ResumeIngestResponse:
+    """Full resume ingestion pipeline automatically attached to current user."""
+    content = await _read_upload(file)
+    filename = file.filename or "upload"
+    content_type = file.content_type
+
+    try:
+        return resume_ingestion_service.ingest(
+            db=db,
+            content=content,
+            filename=filename,
+            user_id=current_user.id,
+            content_type=content_type,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+    except Exception as exc:
+        logger.exception("Unexpected error during resume ingestion for current user %d.", current_user.id)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="An unexpected error occurred while ingesting the resume.",
+        ) from exc
+
