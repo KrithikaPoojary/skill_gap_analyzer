@@ -137,3 +137,18 @@ class TestAuthEndpoints:
             data={"username": email, "password": new_pw},
         )
         assert new_login.status_code == 200
+
+    def test_deactivate_account_success(self, client: TestClient):
+        email = f"deact_{uuid.uuid4().hex[:8]}@example.com"
+        password = "Password123!"
+        client.post("/api/v1/auth/register", json={"email": email, "password": password})
+        login_resp = client.post("/api/v1/auth/login", data={"username": email, "password": password})
+        token = login_resp.json()["access_token"]
+
+        resp = client.delete("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert resp.status_code == 200
+        assert "deactivated" in resp.json()["message"]
+
+        # Subsequent authenticated requests should fail with 400 inactive
+        me_resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
+        assert me_resp.status_code == 400

@@ -121,3 +121,14 @@ class TestProfileAuthEndpoints:
         data = bulk_resp.json()["data"]
         assert data["added_count"] >= 1
 
+    def test_get_profile_stats(self, client: TestClient):
+        email, token = self._register_and_get_token(client)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        resp = client.get("/api/v1/profile/me/stats", headers=headers)
+        assert resp.status_code == 200
+        stats = resp.json()["data"]
+        assert "total_skills" in stats
+        assert "avg_proficiency_score" in stats
+        assert "profile_complete" in stats
+
