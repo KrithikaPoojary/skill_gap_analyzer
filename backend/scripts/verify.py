@@ -409,7 +409,25 @@ def main() -> int:
         log_step("User Auth & JWT Pipeline", False, str(exc))
         all_passed = False
 
-    # 14. Run Pytest Suite
+    # 14. User Profile & Stats Integration Check
+    try:
+        from app.db.session import SessionLocal
+        from app.services.profile_service import profile_service
+        db = SessionLocal()
+        try:
+            stats = profile_service.get_user_stats(db, user_id=user.id)
+            stats_ok = isinstance(stats, dict) and "total_skills" in stats and "avg_proficiency_score" in stats
+            detail = f"User stats computed (skills={stats['total_skills']}, complete={stats['profile_complete']})"
+            log_step("Profile & Stats Service", stats_ok, detail)
+            if not stats_ok:
+                all_passed = False
+        finally:
+            db.close()
+    except Exception as exc:
+        log_step("Profile & Stats Service", False, str(exc))
+        all_passed = False
+
+    # 15. Run Pytest Suite
     print("\n  Running full test suite...")
     venv_python = sys.executable
     result = subprocess.run(
