@@ -291,3 +291,18 @@ def remove_user_skill(
             detail=f"Skill {skill_id} not found on profile {user_id}.",
         )
     return ok(data={"removed": True}, message="Skill removed from profile.").model_dump()
+
+
+@router.get(
+    "/me/stats",
+    summary="Get aggregated statistics for the authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_stats(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Return total skills, avg proficiency score, and profile completeness."""
+    stats = profile_service.get_user_stats(db, user_id=current_user.id)
+    return ok(data=stats).model_dump()

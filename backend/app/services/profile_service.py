@@ -163,5 +163,29 @@ class ProfileService:
             ],
         }
 
+    def get_user_stats(self, db: Session, user_id: int) -> dict[str, Any]:
+        """Return aggregated profile statistics for a user."""
+        from app.models.roadmap import Roadmap
+
+        profile = self.get_by_user_id(db, user_id=user_id)
+        skills_stmt = select(UserSkill).where(UserSkill.user_id == user_id)
+        user_skills = list(db.scalars(skills_stmt).all())
+
+        roadmap_count = db.scalar(
+            select(Roadmap).where(Roadmap.user_id == user_id)
+        )
+
+        proficiency_map = {"beginner": 1, "intermediate": 2, "advanced": 3, "expert": 4}
+        levels = [proficiency_map.get(s.proficiency_level or "", 0) for s in user_skills]
+        avg_proficiency = round(sum(levels) / len(levels), 2) if levels else 0.0
+
+        return {
+            "total_skills": len(user_skills),
+            "avg_proficiency_score": avg_proficiency,
+            "headline": profile.headline if profile else None,
+            "years_of_experience": profile.years_of_experience if profile else None,
+            "profile_complete": profile is not None,
+        }
+
 
 profile_service = ProfileService()
