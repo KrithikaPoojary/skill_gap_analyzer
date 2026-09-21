@@ -165,14 +165,14 @@ class ProfileService:
 
     def get_user_stats(self, db: Session, user_id: int) -> dict[str, Any]:
         """Return aggregated profile statistics for a user."""
-        from app.models.roadmap import Roadmap
+        from app.models.roadmap import LearningRoadmap
 
         profile = self.get_by_user_id(db, user_id=user_id)
         skills_stmt = select(UserSkill).where(UserSkill.user_id == user_id)
         user_skills = list(db.scalars(skills_stmt).all())
 
         roadmap_count = db.scalar(
-            select(Roadmap).where(Roadmap.user_id == user_id)
+            select(LearningRoadmap).where(LearningRoadmap.user_id == user_id)
         )
 
         proficiency_map = {"beginner": 1, "intermediate": 2, "advanced": 3, "expert": 4}

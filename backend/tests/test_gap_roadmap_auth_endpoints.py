@@ -19,9 +19,9 @@ class TestGapAnalysisMeEndpoint:
 
     def test_with_role_200(self, client: TestClient):
         t = self._tok(client)
-        r = client.get("/api/v1/gap-analysis/me", params={"role_name": "Dev"}, headers={"Authorization": f"Bearer {t}"})
+        r = client.get("/api/v1/gap-analysis/me", params={"role_name": "Developer"}, headers={"Authorization": f"Bearer {t}"})
         assert r.status_code == 200
-        assert "readiness_score" in r.json()["data"]
+        assert "weighted_gap_score" in r.json()["data"]
 
 
 class TestRoadmapsMeEndpoints:

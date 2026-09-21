@@ -10,7 +10,17 @@ Fixtures added today:
 import pytest
 from starlette.testclient import TestClient
 
+from app.db.base import Base
+from app.db.session import engine
+import app.models  # noqa: F401
 from app.main import app
+
+
+@pytest.fixture(scope="session", autouse=True)
+def setup_test_db():
+    """Ensure all database tables exist before any tests execute."""
+    Base.metadata.create_all(bind=engine)
+    yield
 
 
 @pytest.fixture(scope="module")

@@ -149,6 +149,6 @@ class TestAuthEndpoints:
         assert resp.status_code == 200
         assert "deactivated" in resp.json()["message"]
 
-        # Subsequent authenticated requests should fail with 400 inactive
+        # Subsequent authenticated requests should fail with 403 inactive
         me_resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
-        assert me_resp.status_code == 400
+        assert me_resp.status_code == 403
