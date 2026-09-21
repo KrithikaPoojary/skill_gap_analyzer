@@ -3,7 +3,7 @@
 from typing import Any
 from fastapi import APIRouter, Body, HTTPException, status
 
-from app.api.deps import DbSession
+from app.api.deps import CurrentUser, DbSession
 from app.schemas.profile import (
     FullProfileResponse,
     ProfileData,
@@ -16,6 +16,50 @@ from app.services.profile_service import profile_service
 from app.services.user_skill_service import user_skill_service
 
 router = APIRouter(prefix="/profile", tags=["User Profile"])
+
+
+@router.get(
+    "/me",
+    summary="Get authenticated candidate profile",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_profile(current_user: CurrentUser, db: DbSession) -> dict[str, Any]:
+    """Retrieve full profile for the currently logged-in user."""
+    profile_data = profile_service.get_full_profile(db, user_id=current_user.id)
+    if not profile_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Profile not found for current user.",
+        )
+    return ok(data=profile_data).model_dump()
+
+
+@router.put(
+    "/me",
+    summary="Update authenticated candidate profile",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def update_my_profile(
+    payload: ProfileUpsertRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Update profile metadata for the currently logged-in user."""
+    try:
+        profile = profile_service.upsert_profile(
+            db,
+            user_id=current_user.id,
+            **payload.model_dump(exclude_unset=True),
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+    profile_dict = ProfileData.model_validate(profile).model_dump()
+    return ok(data=profile_dict, message="Profile updated successfully.").model_dump()
 
 
 @router.get(
