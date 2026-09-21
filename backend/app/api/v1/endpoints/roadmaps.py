@@ -3,7 +3,7 @@
 from typing import Any
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import DbSession
+from app.api.deps import CurrentUser, DbSession
 from app.schemas.response import ok
 from app.schemas.roadmap import (
     MilestoneProgressUpdateRequest,
@@ -14,6 +14,60 @@ from app.schemas.roadmap import (
 from app.services.roadmap_service import roadmap_service
 
 router = APIRouter(prefix="/roadmaps", tags=["Learning Roadmaps"])
+
+
+@router.post(
+    "/me",
+    summary="Generate and persist learning roadmap for the authenticated user",
+    status_code=status.HTTP_201_CREATED,
+    response_model=dict,
+)
+def create_my_roadmap(
+    current_user: CurrentUser,
+    db: DbSession,
+    role_id: int | None = Query(None, description="Target role ID"),
+    role_name: str | None = Query(None, description="Target role title"),
+    role_slug: str | None = Query(None, description="Target role slug"),
+    weekly_commitment_hours: int = Query(10, ge=1, le=80, description="Weekly study hours"),
+) -> dict[str, Any]:
+    """Evaluate current user's profile deficits and generate a personalised learning roadmap."""
+    if not any([role_id, role_name, role_slug]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Must specify at least one of role_id, role_name, or role_slug.",
+        )
+    try:
+        saved = roadmap_service.create_and_persist_for_user(
+            db,
+            user_id=current_user.id,
+            role_id=role_id,
+            role_name=role_name,
+            role_slug=role_slug,
+            weekly_commitment_hours=weekly_commitment_hours,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+    return ok(data=saved, message="Roadmap created and persisted successfully.").model_dump()
+
+
+@router.get(
+    "/me",
+    summary="List all saved roadmaps for the authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def list_my_roadmaps(
+    current_user: CurrentUser,
+    db: DbSession,
+    status_filter: str | None = Query(None, alias="status", description="Filter by active/completed"),
+) -> dict[str, Any]:
+    """Retrieve all persisted roadmaps belonging to the current authenticated user."""
+    roadmaps = roadmap_service.get_user_roadmaps(db, user_id=current_user.id, status=status_filter)
+    return ok(data={"roadmaps": roadmaps, "total": len(roadmaps)}).model_dump()
 
 
 @router.post(
