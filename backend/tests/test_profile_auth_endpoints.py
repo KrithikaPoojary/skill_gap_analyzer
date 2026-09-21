@@ -73,3 +73,51 @@ class TestProfileAuthEndpoints:
         assert get_resp.status_code == 200
         get_data = get_resp.json()["data"]
         assert get_data["profile"]["headline"] == "Senior Cloud Engineer"
+
+    def test_add_and_remove_my_skill(self, client: TestClient):
+        email, token = self._register_and_get_token(client)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Add Python skill
+        add_resp = client.post(
+            "/api/v1/profile/me/skills",
+            json={
+                "skill_name": "Python",
+                "proficiency_level": "advanced",
+                "years_of_experience": 4.0,
+            },
+            headers=headers,
+        )
+        assert add_resp.status_code == 201
+        added_skill = add_resp.json()["data"]
+        assert added_skill["name"] == "Python"
+        skill_id = added_skill["skill_id"]
+
+        # Verify skill appears in profile
+        prof_resp = client.get("/api/v1/profile/me", headers=headers)
+        assert prof_resp.status_code == 200
+        profile_skills = prof_resp.json()["data"]["skills"]
+        assert any(s["skill_id"] == skill_id for s in profile_skills)
+
+        # Remove skill
+        del_resp = client.delete(f"/api/v1/profile/me/skills/{skill_id}", headers=headers)
+        assert del_resp.status_code == 200
+
+        # Verify skill removed
+        prof_resp2 = client.get("/api/v1/profile/me", headers=headers)
+        profile_skills2 = prof_resp2.json()["data"]["skills"]
+        assert not any(s["skill_id"] == skill_id for s in profile_skills2)
+
+    def test_bulk_add_my_skills(self, client: TestClient):
+        email, token = self._register_and_get_token(client)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        bulk_resp = client.post(
+            "/api/v1/profile/me/skills/bulk",
+            json={"skills": ["FastAPI", "Docker", "PostgreSQL"], "proficiency_level": "intermediate"},
+            headers=headers,
+        )
+        assert bulk_resp.status_code == 201
+        data = bulk_resp.json()["data"]
+        assert data["added_count"] >= 1
+

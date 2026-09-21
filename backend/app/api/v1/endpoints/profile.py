@@ -62,6 +62,99 @@ def update_my_profile(
     return ok(data=profile_dict, message="Profile updated successfully.").model_dump()
 
 
+@router.post(
+    "/me/skills",
+    summary="Add or update a skill on authenticated profile",
+    status_code=status.HTTP_201_CREATED,
+    response_model=dict,
+)
+def add_my_skill(
+    payload: UserSkillCreateRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Associate a technical skill with current candidate profile."""
+    try:
+        user_skill = user_skill_service.add_user_skill(
+            db,
+            user_id=current_user.id,
+            skill_id=payload.skill_id,
+            skill_name=payload.skill_name,
+            proficiency_level=payload.proficiency_level,
+            years_of_experience=payload.years_of_experience,
+            is_verified=payload.is_verified,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    skill_data = {
+        "skill_id": user_skill.skill_id,
+        "name": user_skill.skill.name if user_skill.skill else None,
+        "normalized_name": user_skill.skill.normalized_name if user_skill.skill else None,
+        "category": user_skill.skill.category if user_skill.skill else None,
+        "proficiency_level": user_skill.proficiency_level,
+        "years_of_experience": user_skill.years_of_experience,
+        "is_verified": user_skill.is_verified,
+    }
+    return ok(data=skill_data, message="Skill added to your profile.").model_dump()
+
+
+@router.post(
+    "/me/skills/bulk",
+    summary="Bulk add skills to authenticated profile",
+    status_code=status.HTTP_201_CREATED,
+    response_model=dict,
+)
+def bulk_add_my_skills(
+    current_user: CurrentUser,
+    skills: list[str] = Body(..., embed=True, description="List of skill names to associate"),
+    proficiency_level: str = Body("intermediate", embed=True),
+    db: DbSession = None,
+) -> dict[str, Any]:
+    """Bulk associate skill names with current candidate profile."""
+    try:
+        added = user_skill_service.bulk_add_user_skills(
+            db,
+            user_id=current_user.id,
+            skill_names=skills,
+            proficiency_level=proficiency_level,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(e),
+        )
+
+    return ok(
+        data={"added_count": len(added), "skills": [us.skill.name for us in added if us.skill]},
+        message=f"Added {len(added)} skills to your profile.",
+    ).model_dump()
+
+
+@router.delete(
+    "/me/skills/{skill_id}",
+    summary="Remove a skill from authenticated profile",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def remove_my_skill(
+    skill_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Detach a skill from current candidate profile."""
+    removed = user_skill_service.remove_user_skill(db, user_id=current_user.id, skill_id=skill_id)
+    if not removed:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Skill {skill_id} not found on your profile.",
+        )
+    return ok(data={"removed": True}, message="Skill removed from your profile.").model_dump()
+
+
 @router.get(
     "/{user_id}",
     summary="Get aggregated user profile",
