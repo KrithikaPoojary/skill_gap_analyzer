@@ -30,3 +30,4 @@ python-multipart>=0.0.9  # Multipart form-data for FastAPI file uploads
 # Authentication & Security
 pyjwt>=2.8.0          # JWT encoding/decoding
 bcrypt>=4.0.0         # Secure password hashing
+passlib[bcrypt]>=1.7.4  # High-level password hashing facade
