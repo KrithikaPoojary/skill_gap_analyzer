@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import configure_logging
 from app.middleware.correlation import CorrelationIdMiddleware
+from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.timing import RequestTimingMiddleware
 
 logger = logging.getLogger(__name__)
@@ -90,6 +91,7 @@ def create_application() -> FastAPI:
     )
     application.add_middleware(CorrelationIdMiddleware)
     application.add_middleware(RequestTimingMiddleware)
+    application.add_middleware(SecurityHeadersMiddleware)
 
     # ── 5. Routes ─────────────────────────────────────────────────────────── #
     application.include_router(api_v1_router, prefix=settings.api_v1_prefix)
