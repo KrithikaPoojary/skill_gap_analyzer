@@ -2,6 +2,7 @@
 
 from app.models.associations import JobSkill, UserSkill
 from app.models.job import JobPosting
+from app.models.notification import Notification
 from app.models.roadmap import LearningRoadmap, MilestoneSkill, RoadmapMilestone
 from app.models.role import RoleSkillWeighting, TargetRole, UserTargetRole
 from app.models.saved_job import ApplicationStatus, UserSavedJob
@@ -12,6 +13,7 @@ __all__ = [
     "User",
     "Profile",
     "JobPosting",
+    "Notification",
     "Skill",
     "SkillCategory",
     "JobSkill",

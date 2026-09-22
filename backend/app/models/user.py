@@ -50,6 +50,13 @@ class User(Base, TimestampMixin):
         cascade="all, delete-orphan",
     )
 
+    # 1-to-many relationship with Notification
+    notifications: Mapped[list] = relationship(
+        "Notification",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
     def __repr__(self) -> str:
         return f"<User(id={self.id}, email='{self.email}', is_active={self.is_active})>"
 

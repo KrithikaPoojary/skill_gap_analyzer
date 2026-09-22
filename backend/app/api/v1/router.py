@@ -20,6 +20,7 @@ from app.api.v1.endpoints.profile import router as profile_router
 from app.api.v1.endpoints.recommendations import router as recommendations_router
 from app.api.v1.endpoints.resume import router as resume_router
 from app.api.v1.endpoints.roadmaps import router as roadmaps_router
+from app.api.v1.endpoints.notifications import router as notifications_router
 from app.api.v1.endpoints.skills import router as skills_router
 
 api_v1_router = APIRouter()
@@ -38,3 +39,4 @@ api_v1_router.include_router(gap_analysis_router)
 api_v1_router.include_router(recommendations_router)
 api_v1_router.include_router(roadmaps_router)
 api_v1_router.include_router(resume_router)
+api_v1_router.include_router(notifications_router)
