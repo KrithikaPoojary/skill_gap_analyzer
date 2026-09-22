@@ -35,5 +35,21 @@ class SkillRepository(BaseRepository[Skill]):
         stmt = select(Skill).where(Skill.category == category).offset(skip).limit(limit)
         return list(db.scalars(stmt).all())
 
+    def search(
+        self,
+        db: Session,
+        *,
+        query: str,
+        limit: int = 20,
+    ) -> list[Skill]:
+        """Full-text ilike search on skill name."""
+        stmt = (
+            select(Skill)
+            .where(Skill.name.ilike(f"%{query}%"))
+            .order_by(Skill.name)
+            .limit(limit)
+        )
+        return list(db.scalars(stmt).all())
+
 
 skill_repository = SkillRepository()

@@ -3,8 +3,10 @@
 import time
 from typing import Any
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Query, status
 
+from app.api.deps import DbSession
+from app.repositories.skill_repo import skill_repository
 from app.schemas.extraction import (
     BatchExtractionRequest,
     BatchExtractionResponse,
@@ -18,6 +20,40 @@ from app.services.extractor.batch_extractor import batch_skill_extractor
 from app.services.skill_extractor import skill_extractor
 
 router = APIRouter(prefix="/skills", tags=["Skill Extraction"])
+
+
+@router.get(
+    "/catalog",
+    summary="Browse the skill catalog with optional search filter",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def browse_skill_catalog(
+    db: DbSession,
+    q: str | None = Query(None, description="Search term to filter skills by name"),
+    category: str | None = Query(None, description="Filter by skill category"),
+    limit: int = Query(50, ge=1, le=200),
+    skip: int = Query(0, ge=0),
+) -> dict[str, Any]:
+    """Return skills from the catalog, optionally filtered by name or category."""
+    if q:
+        skills = skill_repository.search(db, query=q, limit=limit)
+    elif category:
+        skills = skill_repository.get_by_category(db, category=category, skip=skip, limit=limit)
+    else:
+        skills = skill_repository.get_multi(db, skip=skip, limit=limit)
+
+    return ok(
+        data=[
+            {
+                "id": s.id,
+                "name": s.name,
+                "normalized_name": s.normalized_name,
+                "category": s.category,
+            }
+            for s in skills
+        ]
+    ).model_dump()
 
 
 @router.post(
