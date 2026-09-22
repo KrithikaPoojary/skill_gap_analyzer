@@ -73,6 +73,34 @@ def create_application() -> FastAPI:
                 "name": "Analytics",
                 "description": "Market-level skill demand, salary, and trend analytics.",
             },
+            {
+                "name": "Auth",
+                "description": "User registration, login, and JWT token management.",
+            },
+            {
+                "name": "User Profile",
+                "description": "Candidate profile CRUD, resume upload, and stats.",
+            },
+            {
+                "name": "Skill Extraction",
+                "description": "NLP skill extraction, batch processing, and catalog search.",
+            },
+            {
+                "name": "Gap Analysis",
+                "description": "Skill gap analysis between candidate skills and job requirements.",
+            },
+            {
+                "name": "Roadmaps",
+                "description": "AI-generated personalised learning roadmaps.",
+            },
+            {
+                "name": "Job Matching",
+                "description": "Ranked job matching with saved jobs and application tracking.",
+            },
+            {
+                "name": "notifications",
+                "description": "User notification inbox — list, read, and delete notifications.",
+            },
         ],
     )
 
