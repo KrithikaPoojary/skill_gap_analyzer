@@ -1,0 +1,97 @@
+"""Admin REST API endpoints — superuser-only operations."""
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, Query, status
+
+from app.api.deps import CurrentSuperuser, DbSession
+from app.repositories.user_repo import user_repository
+from app.services import notification_service
+
+router = APIRouter(prefix="/admin", tags=["Admin"])
+
+
+@router.get("/users", summary="List all registered users", response_model=dict)
+def list_users(
+    _: CurrentSuperuser,
+    db: DbSession,
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+) -> Any:
+    """Return paginated list of all user accounts."""
+    users = user_repository.get_multi(db, skip=skip, limit=limit)
+    return {
+        "total": len(users),
+        "users": [
+            {
+                "id": u.id,
+                "email": u.email,
+                "full_name": u.full_name,
+                "is_active": u.is_active,
+                "is_superuser": u.is_superuser,
+            }
+            for u in users
+        ],
+    }
+
+
+@router.get("/users/{user_id}", summary="Get a single user by ID", response_model=dict)
+def get_user(user_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
+    """Fetch full user record by primary key."""
+    user = user_repository.get(db, entity_id=user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return {
+        "id": user.id,
+        "email": user.email,
+        "full_name": user.full_name,
+        "is_active": user.is_active,
+        "is_superuser": user.is_superuser,
+    }
+
+
+@router.patch("/users/{user_id}/deactivate", summary="Deactivate a user account", response_model=dict)
+def deactivate_user(user_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
+    """Set is_active=False for the specified user."""
+    user = user_repository.get(db, entity_id=user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user.is_active = False
+    db.commit()
+    db.refresh(user)
+    return {"id": user.id, "is_active": user.is_active}
+
+
+@router.patch("/users/{user_id}/activate", summary="Reactivate a user account", response_model=dict)
+def activate_user(user_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
+    """Set is_active=True for the specified user."""
+    user = user_repository.get(db, entity_id=user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user.is_active = True
+    db.commit()
+    db.refresh(user)
+    return {"id": user.id, "is_active": user.is_active}
+
+
+@router.post("/notifications/broadcast", summary="Broadcast a notification to all active users", response_model=dict)
+def broadcast_notification(
+    _: CurrentSuperuser,
+    db: DbSession,
+    title: str = Query(..., description="Notification title"),
+    message: str = Query(..., description="Notification body"),
+    category: str = Query("announcement", description="Notification category"),
+) -> Any:
+    """Create a notification record for every active user."""
+    users = user_repository.get_multi(db, skip=0, limit=10000)
+    active_users = [u for u in users if u.is_active]
+    for user in active_users:
+        notification_service.create_notification(
+            db,
+            user_id=user.id,
+            title=title,
+            message=message,
+            category=category,
+        )
+    return {"sent_to": len(active_users), "title": title}

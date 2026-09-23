@@ -10,6 +10,7 @@ Adding a new feature area:
 
 from fastapi import APIRouter
 
+from app.api.v1.endpoints.admin import router as admin_router
 from app.api.v1.endpoints.analytics import router as analytics_router
 from app.api.v1.endpoints.auth import router as auth_router
 from app.api.v1.endpoints.gap_analysis import router as gap_analysis_router
@@ -40,3 +41,4 @@ api_v1_router.include_router(recommendations_router)
 api_v1_router.include_router(roadmaps_router)
 api_v1_router.include_router(resume_router)
 api_v1_router.include_router(notifications_router)
+api_v1_router.include_router(admin_router)
