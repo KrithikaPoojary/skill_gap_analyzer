@@ -6,10 +6,12 @@ from fastapi import APIRouter, HTTPException, Query, status
 from app.api.deps import CurrentUser, DbSession
 from app.repositories.gap_snapshot_repo import gap_snapshot_repository
 from app.schemas.gap_analysis import (
+    CompareRolesRequest,
     GapAnalysisSkillsRequest,
     GapAnalysisTextRequest,
     GapSnapshotRead,
 )
+
 from app.schemas.response import ok
 from app.services.gap_analysis_service import gap_analysis_service
 
@@ -219,4 +221,39 @@ def delete_my_gap_snapshot(
             detail=f"Snapshot with ID {snapshot_id} not found.",
         )
     return ok(data={"snapshot_id": snapshot_id}, message="Snapshot deleted successfully.").model_dump()
+
+
+@router.post(
+    "/compare",
+    summary="Compare skill gap across multiple target roles side-by-side",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def compare_roles(
+    payload: CompareRolesRequest,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Evaluate candidate skills against multiple target roles to determine best fit."""
+    skills = payload.skills or []
+    result = gap_analysis_service.compare_roles(db, skills=skills, role_queries=payload.roles)
+    return ok(data=result).model_dump()
+
+
+@router.post(
+    "/me/compare",
+    summary="Compare authenticated user's profile against multiple roles",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def compare_my_roles(
+    payload: CompareRolesRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Evaluate current user's profile against multiple target roles side-by-side."""
+    result = gap_analysis_service.compare_roles_for_user(
+        db, user_id=current_user.id, role_queries=payload.roles
+    )
+    return ok(data=result).model_dump()
+
 

@@ -178,5 +178,44 @@ class GapAnalysisService:
 
         return report
 
+    def compare_roles(
+        self,
+        db: Session,
+        *,
+        skills: list[str],
+        role_queries: list[str],
+    ) -> dict[str, Any]:
+        """Compare candidate skills across multiple roles."""
+        comparisons = [
+            self.analyse_skills(db, profile_skills=skills, role_name=q)
+            for q in role_queries
+        ]
+        best_fit = max(comparisons, key=lambda x: x.get("coverage_pct", 0.0)) if comparisons else None
+        return {
+            "skills_count": len(skills),
+            "roles_evaluated": len(comparisons),
+            "best_fit_role": best_fit.get("role_name") if best_fit else None,
+            "best_fit_coverage_pct": best_fit.get("coverage_pct") if best_fit else 0.0,
+            "comparisons": comparisons,
+        }
+
+    def compare_roles_for_user(
+        self,
+        db: Session,
+        *,
+        user_id: int,
+        role_queries: list[str],
+    ) -> dict[str, Any]:
+        """Compare user readiness against multiple roles side-by-side."""
+        user = db.get(User, user_id)
+        if not user:
+            raise ValueError(f"User with ID {user_id} not found.")
+
+        claimed_skills = user_skill_service.get_user_skill_names(db, user_id=user_id)
+        res = self.compare_roles(db, skills=claimed_skills, role_queries=role_queries)
+        res["user_id"] = user_id
+        return res
+
 
 gap_analysis_service = GapAnalysisService()
+

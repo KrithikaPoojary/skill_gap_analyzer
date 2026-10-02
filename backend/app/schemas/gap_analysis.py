@@ -67,3 +67,10 @@ class GapSnapshotRead(BaseModel):
     missing_skills: list[Any] = Field(default_factory=list)
     created_at: datetime | None = None
 
+
+class CompareRolesRequest(BaseModel):
+    """Request payload to compare multiple target roles."""
+
+    roles: list[str] = Field(..., min_length=2, max_length=10, description="List of role titles or keywords to compare")
+    skills: list[str] | None = Field(default=None, description="Optional explicit skills list; if omitted in /me, user profile is used")
+
