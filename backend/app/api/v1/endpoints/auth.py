@@ -18,7 +18,9 @@ from fastapi import Depends
 
 from app.api.deps import CurrentActiveUser, DbSession
 from app.schemas.auth import (
+    ForgotPasswordRequest,
     PasswordChangeRequest,
+    ResetPasswordRequest,
     TokenResponse,
     UserOut,
     UserRegisterRequest,
@@ -129,3 +131,47 @@ def deactivate_me(
     """Deactivate account for the current user."""
     auth_service.deactivate_account(db, current_user)
     return {"message": "Account deactivated successfully."}
+
+
+@router.post(
+    "/forgot-password",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Request a password reset link",
+    description="Generate a secure temporary password reset token for account recovery.",
+)
+def forgot_password(
+    req: ForgotPasswordRequest,
+    db: DbSession,
+) -> dict:
+    """Generate a password reset token for the requested email address."""
+    token = auth_service.request_password_reset(db, email=req.email)
+    return {
+        "message": "If the account exists, a password reset token has been issued.",
+        "reset_token": token,
+    }
+
+
+@router.post(
+    "/reset-password",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Reset password using reset token",
+    description="Validate password reset token and update account password.",
+)
+def reset_password(
+    req: ResetPasswordRequest,
+    db: DbSession,
+) -> dict:
+    """Validate reset token and set a new password."""
+    try:
+        auth_service.reset_password_with_token(
+            db, token=req.token, new_password=req.new_password
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    return {"message": "Password has been successfully reset. You can now log in."}
+

@@ -68,3 +68,25 @@ class PasswordChangeRequest(BaseModel):
 
     current_password: str = Field(..., min_length=1, description="Existing account password.")
     new_password: str = Field(..., min_length=8, max_length=128, description="New password (min 8 chars).")
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Payload for requesting password reset token."""
+
+    email: str = Field(..., description="Registered account email.")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v: str) -> str:
+        clean = v.strip().lower()
+        if not _EMAIL_REGEX.match(clean):
+            raise ValueError("Invalid email format.")
+        return clean
+
+
+class ResetPasswordRequest(BaseModel):
+    """Payload for resetting password with verification token."""
+
+    token: str = Field(..., description="Password reset verification token.")
+    new_password: str = Field(..., min_length=8, max_length=128, description="New password (min 8 chars).")
+

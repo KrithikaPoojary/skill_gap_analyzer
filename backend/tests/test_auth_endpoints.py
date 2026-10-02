@@ -152,3 +152,41 @@ class TestAuthEndpoints:
         # Subsequent authenticated requests should fail with 403 inactive
         me_resp = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {token}"})
         assert me_resp.status_code == 403
+
+    def test_forgot_and_reset_password_flow(self, client: TestClient):
+        email = f"reset_{uuid.uuid4().hex[:8]}@example.com"
+        old_pw = "OriginalPass123!"
+        new_pw = "BrandNewSecurePass456!"
+
+        # Register user
+        client.post("/api/v1/auth/register", json={"email": email, "password": old_pw})
+
+        # Request reset token
+        forgot_resp = client.post("/api/v1/auth/forgot-password", json={"email": email})
+        assert forgot_resp.status_code == 200
+        token = forgot_resp.json()["reset_token"]
+        assert token is not None
+
+        # Reset password using token
+        reset_resp = client.post(
+            "/api/v1/auth/reset-password",
+            json={"token": token, "new_password": new_pw},
+        )
+        assert reset_resp.status_code == 200
+        assert "successfully reset" in reset_resp.json()["message"]
+
+        # Confirm old password fails
+        bad_login = client.post("/api/v1/auth/login", data={"username": email, "password": old_pw})
+        assert bad_login.status_code == 401
+
+        # Confirm new password succeeds
+        good_login = client.post("/api/v1/auth/login", data={"username": email, "password": new_pw})
+        assert good_login.status_code == 200
+
+    def test_reset_password_invalid_token(self, client: TestClient):
+        resp = client.post(
+            "/api/v1/auth/reset-password",
+            json={"token": "invalid.jwt.token", "new_password": "NewValidPass123!"},
+        )
+        assert resp.status_code == 400
+

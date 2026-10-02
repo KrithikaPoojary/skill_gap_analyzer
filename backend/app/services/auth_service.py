@@ -8,8 +8,10 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.security import (
     create_access_token,
+    create_password_reset_token,
     hash_password,
     verify_password,
+    verify_password_reset_token,
 )
 from app.models.user import Profile, User
 from app.repositories.user_repo import UserRepository, user_repository
@@ -112,6 +114,27 @@ class AuthService:
         db.add(user)
         db.commit()
         logger.info("Account deactivated for user id=%d.", user.id)
+        return True
+
+    def request_password_reset(self, db: Session, email: str) -> str | None:
+        """Issue a password reset token for the given account email."""
+        user = self._user_repo.get_by_email(db, email=email)
+        if not user or not user.is_active:
+            return None
+        return create_password_reset_token(email=user.email)
+
+    def reset_password_with_token(self, db: Session, token: str, new_password: str) -> bool:
+        """Verify reset token and update account password."""
+        email = verify_password_reset_token(token)
+        user = self._user_repo.get_by_email(db, email=email)
+        if not user or not user.is_active:
+            raise ValueError("User account associated with this token was not found or is inactive.")
+
+        user.hashed_password = hash_password(new_password)
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info("Password reset successfully for user '%s'.", email)
         return True
 
 

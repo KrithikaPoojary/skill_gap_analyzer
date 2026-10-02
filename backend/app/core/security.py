@@ -80,3 +80,47 @@ def decode_access_token(token: str) -> dict[str, Any]:
         raise ValueError("Token has expired.") from exc
     except jwt.InvalidTokenError as exc:
         raise ValueError("Invalid authentication token.") from exc
+
+
+def create_password_reset_token(email: str, expires_minutes: int = 15) -> str:
+    """Generate a signed JWT password reset token valid for a limited window."""
+    now = datetime.now(timezone.utc)
+    expire = now + timedelta(minutes=expires_minutes)
+    to_encode = {
+        "sub": email.strip().lower(),
+        "type": "reset_password",
+        "iat": now,
+        "exp": expire,
+    }
+    return jwt.encode(
+        to_encode,
+        settings.jwt_secret_key,
+        algorithm=settings.jwt_algorithm,
+    )
+
+
+def verify_password_reset_token(token: str) -> str:
+    """Validate a password reset token and return the associated email address.
+
+    Raises:
+        ValueError: If token is expired, invalid, or wrong type.
+    """
+    try:
+        payload = jwt.decode(
+            token,
+            settings.jwt_secret_key,
+            algorithms=[settings.jwt_algorithm],
+        )
+    except jwt.ExpiredSignatureError as exc:
+        raise ValueError("Password reset token has expired.") from exc
+    except jwt.InvalidTokenError as exc:
+        raise ValueError("Invalid password reset token.") from exc
+
+    if payload.get("type") != "reset_password":
+        raise ValueError("Token is not valid for password reset.")
+
+    email = payload.get("sub")
+    if not email:
+        raise ValueError("Token subject is missing.")
+    return str(email)
+
