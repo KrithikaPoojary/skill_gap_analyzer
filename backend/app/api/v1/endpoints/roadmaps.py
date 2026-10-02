@@ -70,8 +70,54 @@ def list_my_roadmaps(
     return ok(data={"roadmaps": roadmaps, "total": len(roadmaps)}).model_dump()
 
 
+@router.delete(
+    "/me/{roadmap_id}",
+    summary="Delete a saved roadmap belonging to authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def delete_my_roadmap(
+    roadmap_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Permanently delete a saved learning roadmap owned by current user."""
+    success = roadmap_service.delete_user_roadmap(db, user_id=current_user.id, roadmap_id=roadmap_id)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Roadmap with ID {roadmap_id} not found.",
+        )
+    return ok(data={"deleted": True, "roadmap_id": roadmap_id}, message="Roadmap deleted successfully.").model_dump()
+
+
+@router.patch(
+    "/me/{roadmap_id}/status",
+    summary="Update roadmap status for authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def update_my_roadmap_status(
+    roadmap_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+    new_status: str = Query(..., alias="status", pattern="^(active|completed|archived|paused)$", description="New status"),
+) -> dict[str, Any]:
+    """Update roadmap status (active, completed, archived, paused)."""
+    updated = roadmap_service.update_user_roadmap_status(
+        db, user_id=current_user.id, roadmap_id=roadmap_id, status=new_status
+    )
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Roadmap with ID {roadmap_id} not found.",
+        )
+    return ok(data=updated, message=f"Roadmap status updated to {new_status}.").model_dump()
+
+
 @router.post(
     "/generate",
+
     summary="Generate transient learning roadmap from missing skills",
     status_code=status.HTTP_200_OK,
     response_model=dict,

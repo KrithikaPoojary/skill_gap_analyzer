@@ -175,6 +175,20 @@ class RoadmapService:
             "is_completed": milestone.is_completed,
         }
 
+    def delete_user_roadmap(self, db: Session, *, user_id: int, roadmap_id: int) -> bool:
+        """Delete roadmap belonging to user."""
+        return self.repo.delete_user_roadmap(db, roadmap_id=roadmap_id, user_id=user_id)
+
+    def update_user_roadmap_status(
+        self, db: Session, *, user_id: int, roadmap_id: int, status: str
+    ) -> dict[str, Any] | None:
+        """Update roadmap status (e.g. active, completed, archived)."""
+        rm = self.repo.update_roadmap_status(db, roadmap_id=roadmap_id, user_id=user_id, status=status)
+        if not rm:
+            return None
+        return self._format_roadmap_model(rm)
+
+
     def _format_roadmap_model(self, rm: LearningRoadmap) -> dict[str, Any]:
         """Transform SQLAlchemy ORM model to dictionary with embedded resources."""
         milestones_list = []

@@ -141,5 +141,37 @@ class RoadmapRepository(BaseRepository[LearningRoadmap]):
         db.refresh(roadmap)
         return roadmap
 
+    def delete_user_roadmap(self, db: Session, *, roadmap_id: int, user_id: int) -> bool:
+        """Delete roadmap belonging to a specific user."""
+        roadmap = db.scalar(
+            select(LearningRoadmap).where(
+                LearningRoadmap.id == roadmap_id,
+                LearningRoadmap.user_id == user_id,
+            )
+        )
+        if not roadmap:
+            return False
+        db.delete(roadmap)
+        db.commit()
+        return True
+
+    def update_roadmap_status(
+        self, db: Session, *, roadmap_id: int, user_id: int, status: str
+    ) -> LearningRoadmap | None:
+        """Update roadmap lifecycle status for the user."""
+        roadmap = db.scalar(
+            select(LearningRoadmap).where(
+                LearningRoadmap.id == roadmap_id,
+                LearningRoadmap.user_id == user_id,
+            )
+        )
+        if not roadmap:
+            return None
+        roadmap.status = status
+        db.commit()
+        db.refresh(roadmap)
+        return roadmap
+
 
 roadmap_repository = RoadmapRepository()
+
