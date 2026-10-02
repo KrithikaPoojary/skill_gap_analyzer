@@ -8,8 +8,10 @@ from fastapi import APIRouter, HTTPException, Query, status
 from app.api.deps import CurrentSuperuser, DbSession
 from app.repositories.user_repo import user_repository
 from app.services import notification_service
+from app.services.platform_stats_service import platform_stats_service
 
 router = APIRouter(prefix="/admin", tags=["Admin"])
+
 
 
 @router.get("/users", summary="List all registered users", response_model=dict)
@@ -137,4 +139,10 @@ def promote_user(user_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
     db.commit()
     db.refresh(user)
     return {"id": user.id, "email": user.email, "is_superuser": user.is_superuser}
+
+
+@router.get("/stats/overview", summary="Platform-wide aggregated metrics overview", response_model=dict)
+def get_platform_overview(_: CurrentSuperuser, db: DbSession) -> Any:
+    """Return platform-wide operational statistics for monitoring dashboards."""
+    return platform_stats_service.get_overview(db)
 
