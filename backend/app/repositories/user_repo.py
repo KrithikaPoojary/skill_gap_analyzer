@@ -29,5 +29,15 @@ class UserRepository(BaseRepository[User]):
         stmt = select(User).where(User.is_active.is_(True)).offset(skip).limit(limit)
         return list(db.scalars(stmt).all())
 
+    def search_by_email(self, db: Session, *, query: str, limit: int = 20) -> list[User]:
+        """Partial email search (case-insensitive ilike)."""
+        stmt = (
+            select(User)
+            .where(User.email.ilike(f"%{query}%"))
+            .order_by(User.email)
+            .limit(limit)
+        )
+        return list(db.scalars(stmt).all())
+
 
 user_repository = UserRepository()

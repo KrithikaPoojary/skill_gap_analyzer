@@ -80,3 +80,46 @@ class PaginatedJobMatchResponse(BaseModel):
     total: int
     offset: int
     limit: int
+
+
+class JobSaveRequest(BaseModel):
+    """Request payload to bookmark a job posting."""
+
+    notes: str | None = Field(None, max_length=1000, description="Optional personal notes")
+
+
+class JobApplicationStatusUpdateRequest(BaseModel):
+    """Request payload to update recruitment progress."""
+
+    status: str = Field(
+        ...,
+        description="Application status: saved, applied, interviewing, offered, rejected, withdrawn",
+        examples=["applied"],
+    )
+    notes: str | None = Field(None, max_length=1000, description="Updated notes")
+
+
+class SavedJobRead(BaseModel):
+    """Output schema for a bookmarked job."""
+
+    id: int
+    user_id: int
+    job_id: int
+    status: str
+    notes: str | None
+    applied_at: datetime | None
+    created_at: datetime
+    updated_at: datetime
+    job_title: str | None = None
+    company_name: str | None = None
+    location: str | None = None
+    is_remote: bool | None = None
+
+
+class PaginatedSavedJobResponse(BaseModel):
+    """Paginated collection of user saved jobs."""
+
+    items: list[SavedJobRead]
+    total: int
+    offset: int
+    limit: int

@@ -32,18 +32,20 @@ class TestAdminEndpoints:
         )
         assert resp.status_code == 403
 
-    def test_get_nonexistent_user_404(self, client: TestClient, db) -> None:
+    def test_get_nonexistent_user_404(self, client: TestClient) -> None:
         from app.models.user import User
         from app.core.security import hash_password
+        from app.db.session import SessionLocal
 
-        su = User(
-            email=f"su{uuid.uuid4().hex[:6]}@test.com",
-            hashed_password=hash_password("Super1234!"),
-            is_superuser=True,
-            is_active=True,
-        )
-        db.add(su)
-        db.commit()
+        with SessionLocal() as db:
+            su = User(
+                email=f"su{uuid.uuid4().hex[:6]}@test.com",
+                hashed_password=hash_password("Super1234!"),
+                is_superuser=True,
+                is_active=True,
+            )
+            db.add(su)
+            db.commit()
 
         token_resp = client.post(
             "/api/v1/auth/login",
@@ -65,3 +67,13 @@ class TestAdminEndpoints:
             headers={"Authorization": f"Bearer {token}"},
         )
         assert resp.status_code == 403
+
+    def test_search_users_requires_superuser(self, client: TestClient) -> None:
+        _, token = self._register(client)
+        resp = client.get(
+            "/api/v1/admin/users/search",
+            params={"email": "test"},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp.status_code == 403
+

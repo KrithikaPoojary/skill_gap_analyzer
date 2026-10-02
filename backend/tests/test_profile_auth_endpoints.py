@@ -132,3 +132,37 @@ class TestProfileAuthEndpoints:
         assert "avg_proficiency_score" in stats
         assert "profile_complete" in stats
 
+    def test_change_my_email(self, client: TestClient):
+        email, token = self._register_and_get_token(client)
+        headers = {"Authorization": f"Bearer {token}"}
+        new_email = f"updated_{uuid.uuid4().hex[:6]}@example.com"
+
+        resp = client.patch(
+            "/api/v1/profile/me/change-email",
+            json={"new_email": new_email},
+            headers=headers,
+        )
+        assert resp.status_code == 200
+        assert resp.json()["data"]["email"] == new_email
+
+    def test_change_my_password(self, client: TestClient):
+        email, token = self._register_and_get_token(client)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Incorrect current password fails
+        resp_bad = client.patch(
+            "/api/v1/profile/me/change-password",
+            json={"current_password": "WrongPassword!", "new_password": "BrandNewPassword123!"},
+            headers=headers,
+        )
+        assert resp_bad.status_code == 400
+
+        # Correct current password succeeds
+        resp_ok = client.patch(
+            "/api/v1/profile/me/change-password",
+            json={"current_password": "SecurePassword123!", "new_password": "BrandNewPassword123!"},
+            headers=headers,
+        )
+        assert resp_ok.status_code == 200
+
+

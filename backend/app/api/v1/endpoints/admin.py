@@ -75,6 +75,24 @@ def activate_user(user_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
     return {"id": user.id, "is_active": user.is_active}
 
 
+@router.get("/users/search", summary="Search users by email fragment", response_model=dict)
+def search_users(
+    _: CurrentSuperuser,
+    db: DbSession,
+    q: str = Query(..., min_length=2, description="Email search term"),
+    limit: int = Query(20, ge=1, le=100),
+) -> Any:
+    """Return users whose email contains the search term."""
+    users = user_repository.search_by_email(db, query=q, limit=limit)
+    return {
+        "total": len(users),
+        "users": [
+            {"id": u.id, "email": u.email, "is_active": u.is_active}
+            for u in users
+        ],
+    }
+
+
 @router.post("/notifications/broadcast", summary="Broadcast a notification to all active users", response_model=dict)
 def broadcast_notification(
     _: CurrentSuperuser,

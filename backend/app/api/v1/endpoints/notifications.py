@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.services import notification_service
@@ -54,7 +54,12 @@ def mark_all_notifications_read(current_user: CurrentUser, db: DbSession) -> Any
     return {"marked_read": count}
 
 
-@router.delete("/{notification_id}", summary="Delete a notification", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/{notification_id}",
+    summary="Delete a notification",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+)
 def delete_notification(
     notification_id: int,
     current_user: CurrentUser,

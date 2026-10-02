@@ -306,3 +306,54 @@ def get_my_stats(
     """Return total skills, avg proficiency score, and profile completeness."""
     stats = profile_service.get_user_stats(db, user_id=current_user.id)
     return ok(data=stats).model_dump()
+
+
+@router.patch(
+    "/me/change-email",
+    summary="Change the authenticated user's email address",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def change_my_email(
+    current_user: CurrentUser,
+    db: DbSession,
+    new_email: str = Body(..., embed=True, description="New unique email address"),
+) -> dict[str, Any]:
+    """Update email — validates uniqueness before saving."""
+    from app.repositories.user_repo import user_repository
+
+    existing = user_repository.get_by_email(db, email=new_email)
+    if existing and existing.id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Email address is already in use.",
+        )
+    current_user.email = new_email.strip().lower()
+    db.commit()
+    db.refresh(current_user)
+    return ok(data={"email": current_user.email}).model_dump()
+
+
+@router.patch(
+    "/me/change-password",
+    summary="Change the authenticated user's password",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def change_my_password(
+    current_user: CurrentUser,
+    db: DbSession,
+    current_password: str = Body(..., embed=True),
+    new_password: str = Body(..., embed=True, min_length=8),
+) -> dict[str, Any]:
+    """Verify current password then update hash."""
+    from app.core.security import hash_password, verify_password
+
+    if not verify_password(current_password, current_user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current password is incorrect.",
+        )
+    current_user.hashed_password = hash_password(new_password)
+    db.commit()
+    return ok(data={"message": "Password updated successfully."}).model_dump()
