@@ -113,3 +113,28 @@ def broadcast_notification(
             category=category,
         )
     return {"sent_to": len(active_users), "title": title}
+
+
+@router.delete("/users/{user_id}", summary="Permanently delete a user account", response_model=dict)
+def delete_user(user_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
+    """Hard-delete a user account and all cascade data."""
+    user = user_repository.get(db, entity_id=user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    email = user.email
+    db.delete(user)
+    db.commit()
+    return {"deleted": True, "email": email}
+
+
+@router.patch("/users/{user_id}/promote", summary="Grant superuser role to a user", response_model=dict)
+def promote_user(user_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
+    """Elevate a regular account to superuser privileges."""
+    user = user_repository.get(db, entity_id=user_id)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    user.is_superuser = True
+    db.commit()
+    db.refresh(user)
+    return {"id": user.id, "email": user.email, "is_superuser": user.is_superuser}
+
