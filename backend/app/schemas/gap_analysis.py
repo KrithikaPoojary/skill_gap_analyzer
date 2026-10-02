@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -50,3 +51,19 @@ class GapAnalysisTextResponse(BaseModel):
 
     extracted_skills: list[dict[str, Any]] = Field(default_factory=list)
     gap_report: GapReportSchema
+
+
+class GapSnapshotRead(BaseModel):
+    """Schema for historical gap analysis record."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    user_id: int
+    role_id: int | None = None
+    role_title: str
+    readiness_score: float
+    matched_skills: list[Any] = Field(default_factory=list)
+    missing_skills: list[Any] = Field(default_factory=list)
+    created_at: datetime | None = None
+

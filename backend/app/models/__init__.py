@@ -2,6 +2,7 @@
 
 from app.models.associations import JobSkill, UserSkill
 from app.models.job import JobPosting
+from app.models.gap_snapshot import SkillGapSnapshot
 from app.models.notification import Notification
 from app.models.roadmap import LearningRoadmap, MilestoneSkill, RoadmapMilestone
 from app.models.role import RoleSkillWeighting, TargetRole, UserTargetRole
@@ -26,4 +27,5 @@ __all__ = [
     "MilestoneSkill",
     "UserSavedJob",
     "ApplicationStatus",
+    "SkillGapSnapshot",
 ]
