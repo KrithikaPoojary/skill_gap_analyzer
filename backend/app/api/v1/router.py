@@ -21,6 +21,7 @@ from app.api.v1.endpoints.profile import router as profile_router
 from app.api.v1.endpoints.recommendations import router as recommendations_router
 from app.api.v1.endpoints.resume import router as resume_router
 from app.api.v1.endpoints.roadmaps import router as roadmaps_router
+from app.api.v1.endpoints.roles import router as roles_router
 from app.api.v1.endpoints.notifications import router as notifications_router
 from app.api.v1.endpoints.skills import router as skills_router
 
@@ -33,6 +34,7 @@ api_v1_router.include_router(auth_router)
 api_v1_router.include_router(health_router)
 api_v1_router.include_router(jobs_router)
 api_v1_router.include_router(job_matching_router)
+api_v1_router.include_router(roles_router)
 api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(skills_router)
 api_v1_router.include_router(profile_router)
