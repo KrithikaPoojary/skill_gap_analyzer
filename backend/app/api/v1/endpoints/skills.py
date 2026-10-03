@@ -68,6 +68,36 @@ def browse_skill_catalog(
     ).model_dump()
 
 
+@router.get(
+    "/{skill_id}",
+    summary="Get single skill by ID",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_skill(
+    skill_id: int,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Retrieve details for a specific skill by its ID."""
+    from fastapi import HTTPException
+    skill = skill_repository.get(db, skill_id)
+    if not skill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Skill with ID {skill_id} not found.",
+        )
+    return ok(
+        data={
+            "id": skill.id,
+            "name": skill.name,
+            "normalized_name": skill.normalized_name,
+            "category": skill.category,
+            "created_at": skill.created_at.isoformat() if skill.created_at else None,
+        }
+    ).model_dump()
+
+
+
 @router.post(
     "/extract",
     summary="Extract technical skills from unstructured text",
