@@ -38,6 +38,21 @@ def list_target_roles(
 
 
 @router.get(
+    "/popular",
+    summary="Get most popular target roles tracked by candidates",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_popular_target_roles(
+    db: DbSession,
+    limit: int = Query(10, ge=1, le=50, description="Max roles to return"),
+) -> dict[str, Any]:
+    """Retrieve top target roles ranked by number of candidates actively tracking them."""
+    popular = role_repository.get_popular_roles(db, limit=limit)
+    return ok(data=popular).model_dump()
+
+
+@router.get(
     "/by-slug/{slug}",
     summary="Get target role by slug",
     status_code=status.HTTP_200_OK,

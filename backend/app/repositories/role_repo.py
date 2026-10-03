@@ -99,5 +99,41 @@ class RoleRepository(BaseRepository[TargetRole]):
         db.commit()
         return bool(res.rowcount and res.rowcount > 0)
 
+    def get_popular_roles(
+        self,
+        db: Session,
+        *,
+        limit: int = 10,
+    ) -> list[dict[str, Any]]:
+        """Return roles ranked by how many candidates have selected them as target."""
+        from sqlalchemy import func
+        stmt = (
+            select(
+                TargetRole.id,
+                TargetRole.title,
+                TargetRole.slug,
+                TargetRole.category,
+                TargetRole.min_experience_years,
+                func.count(UserTargetRole.user_id).label("candidate_count"),
+            )
+            .outerjoin(UserTargetRole, TargetRole.id == UserTargetRole.role_id)
+            .where(TargetRole.is_active.is_(True))
+            .group_by(TargetRole.id)
+            .order_by(func.count(UserTargetRole.user_id).desc(), TargetRole.title.asc())
+            .limit(limit)
+        )
+        rows = db.execute(stmt).all()
+        return [
+            {
+                "id": r.id,
+                "title": r.title,
+                "slug": r.slug,
+                "category": r.category,
+                "min_experience_years": r.min_experience_years,
+                "candidates_tracking": r.candidate_count,
+            }
+            for r in rows
+        ]
+
 
 role_repository = RoleRepository()
