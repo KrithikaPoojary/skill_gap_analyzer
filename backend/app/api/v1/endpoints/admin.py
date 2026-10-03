@@ -221,6 +221,40 @@ class AdminSkillUpdate(BaseModel):
     is_verified: bool | None = None
 
 
+@router.get("/skills", summary="List all taxonomy skills with pagination and filter", response_model=dict)
+def list_taxonomy_skills(
+    _: CurrentSuperuser,
+    db: DbSession,
+    category: str | None = Query(None, description="Filter by category"),
+    is_verified: bool | None = Query(None, description="Filter by verification status"),
+    skip: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=200),
+) -> Any:
+    """Return paginated list of all skills in taxonomy with optional filters."""
+    query = db.query(Skill)
+    if category:
+        query = query.filter(Skill.category == category.strip().lower())
+    if is_verified is not None:
+        query = query.filter(Skill.is_verified == is_verified)
+
+    total = query.count()
+    skills = query.order_by(Skill.name).offset(skip).limit(limit).all()
+    return {
+        "total": total,
+        "skills": [
+            {
+                "id": s.id,
+                "name": s.name,
+                "normalized_name": s.normalized_name,
+                "category": s.category,
+                "is_verified": s.is_verified,
+                "description": s.description,
+            }
+            for s in skills
+        ],
+    }
+
+
 @router.post("/skills", summary="Create a new verified skill in the taxonomy", status_code=status.HTTP_201_CREATED, response_model=dict)
 def create_skill(payload: AdminSkillCreate, _: CurrentSuperuser, db: DbSession) -> Any:
     """Create a new skill in the catalog."""

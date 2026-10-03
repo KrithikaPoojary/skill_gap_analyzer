@@ -88,3 +88,20 @@ class TestAdminSkills:
         del_resp = client.delete(f"/api/v1/admin/skills/{skill_id}", headers=headers)
         assert del_resp.status_code == 200
         assert del_resp.json()["deleted"] is True
+
+    def test_list_taxonomy_skills(self, client: TestClient) -> None:
+        token = self._create_superuser_token(client)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        resp = client.get("/api/v1/admin/skills", headers=headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "total" in data
+        assert "skills" in data
+        assert isinstance(data["skills"], list)
+
+        # Test filtering by non-existent category
+        resp_filtered = client.get("/api/v1/admin/skills?category=nonexistent_xyz_123", headers=headers)
+        assert resp_filtered.status_code == 200
+        assert resp_filtered.json()["total"] == 0
+
