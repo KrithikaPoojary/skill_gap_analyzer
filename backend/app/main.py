@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.core.exception_handlers import register_exception_handlers
 from app.core.logging import configure_logging
 from app.middleware.correlation import CorrelationIdMiddleware
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.security_headers import SecurityHeadersMiddleware
 from app.middleware.timing import RequestTimingMiddleware
 
@@ -101,6 +102,18 @@ def create_application() -> FastAPI:
                 "name": "notifications",
                 "description": "User notification inbox — list, read, and delete notifications.",
             },
+            {
+                "name": "Admin",
+                "description": "Administrative overview, user lifecycle, platform stats, and exports.",
+            },
+            {
+                "name": "Roles",
+                "description": "Standardised industry target roles and skill weightings.",
+            },
+            {
+                "name": "Recommendations",
+                "description": "Target role and course recommendations based on candidate profile.",
+            },
         ],
     )
 
@@ -117,6 +130,12 @@ def create_application() -> FastAPI:
         allow_headers=["*"],
         expose_headers=["X-Request-ID", "X-Process-Time-Ms"],
     )
+    if settings.rate_limit_enabled:
+        application.add_middleware(
+            RateLimitMiddleware,
+            max_requests=settings.rate_limit_per_minute,
+            window_seconds=60,
+        )
     application.add_middleware(CorrelationIdMiddleware)
     application.add_middleware(RequestTimingMiddleware)
     application.add_middleware(SecurityHeadersMiddleware)

@@ -65,6 +65,12 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24  # 24 hours
 
+    # ------------------------------------------------------------------ #
+    # Rate Limiting
+    # ------------------------------------------------------------------ #
+    rate_limit_per_minute: int = 600
+    rate_limit_enabled: bool = True
+
 
 # Module-level singleton — import ``settings`` directly anywhere in the app.
 settings = Settings()
