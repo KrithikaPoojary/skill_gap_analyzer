@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Query, Response, status
+
 
 from app.api.deps import CurrentSuperuser, DbSession
 from app.repositories.user_repo import user_repository
@@ -32,6 +33,57 @@ def list_users(
                 "full_name": u.full_name,
                 "is_active": u.is_active,
                 "is_superuser": u.is_superuser,
+                "login_count": getattr(u, "login_count", 0),
+                "last_login_at": u.last_login_at.isoformat() if getattr(u, "last_login_at", None) else None,
+            }
+            for u in users
+        ],
+    }
+
+
+@router.get("/users/export", summary="Export registered users as JSON or CSV")
+def export_users(
+    _: CurrentSuperuser,
+    db: DbSession,
+    format: str = Query("json", pattern="^(json|csv)$", description="Export format: json or csv"),
+) -> Any:
+    """Export all user accounts with activity and status metrics."""
+    import csv
+    import io
+
+    users = user_repository.get_multi(db, skip=0, limit=10000)
+    if format == "csv":
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(["id", "email", "full_name", "is_active", "is_superuser", "login_count", "last_login_at", "created_at"])
+        for u in users:
+            writer.writerow([
+                u.id,
+                u.email,
+                u.full_name or "",
+                u.is_active,
+                u.is_superuser,
+                getattr(u, "login_count", 0),
+                u.last_login_at.isoformat() if getattr(u, "last_login_at", None) else "",
+                u.created_at.isoformat() if getattr(u, "created_at", None) else "",
+            ])
+        return Response(
+            content=output.getvalue(),
+            media_type="text/csv",
+            headers={"Content-Disposition": 'attachment; filename="users_export.csv"'},
+        )
+    return {
+        "total": len(users),
+        "users": [
+            {
+                "id": u.id,
+                "email": u.email,
+                "full_name": u.full_name,
+                "is_active": u.is_active,
+                "is_superuser": u.is_superuser,
+                "login_count": getattr(u, "login_count", 0),
+                "last_login_at": u.last_login_at.isoformat() if getattr(u, "last_login_at", None) else None,
+                "created_at": u.created_at.isoformat() if getattr(u, "created_at", None) else None,
             }
             for u in users
         ],
@@ -39,6 +91,7 @@ def list_users(
 
 
 @router.get("/users/{user_id}", summary="Get a single user by ID", response_model=dict)
+
 def get_user(user_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
     """Fetch full user record by primary key."""
     user = user_repository.get(db, entity_id=user_id)
