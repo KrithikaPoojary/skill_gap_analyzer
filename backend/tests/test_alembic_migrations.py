@@ -31,8 +31,10 @@ class TestAlembicConfiguration:
             "target_roles",
             "role_skill_weightings",
             "user_target_roles",
+            "skill_gap_snapshots",
         }
         registered_tables = set(Base.metadata.tables.keys())
+
         assert expected_tables.issubset(registered_tables), (
             f"Missing tables: {expected_tables - registered_tables}"
         )
