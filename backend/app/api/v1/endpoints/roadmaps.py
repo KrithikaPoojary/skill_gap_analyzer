@@ -85,6 +85,27 @@ def get_my_roadmap_progress(
     return ok(data=progress).model_dump()
 
 
+@router.get(
+    "/me/{roadmap_id}",
+    summary="Get single roadmap details belonging to authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_roadmap_details(
+    roadmap_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Retrieve full details of a specific learning roadmap owned by current user."""
+    roadmap = roadmap_service.get_user_roadmap_by_id(db, user_id=current_user.id, roadmap_id=roadmap_id)
+    if not roadmap:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Roadmap with ID {roadmap_id} not found.",
+        )
+    return ok(data=roadmap).model_dump()
+
+
 @router.delete(
     "/me/{roadmap_id}",
     summary="Delete a saved roadmap belonging to authenticated user",

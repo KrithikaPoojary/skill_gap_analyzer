@@ -154,6 +154,14 @@ class RoadmapService:
             return None
         return self._format_roadmap_model(rm)
 
+    def get_user_roadmap_by_id(self, db: Session, *, user_id: int, roadmap_id: int) -> dict[str, Any] | None:
+        """Fetch complete roadmap with milestones by ID ensuring user ownership."""
+        rm = self.repo.get_by_id_with_milestones(db, roadmap_id=roadmap_id)
+        if not rm or rm.user_id != user_id:
+            return None
+        return self._format_roadmap_model(rm)
+
+
     def update_milestone_progress(
         self,
         db: Session,
