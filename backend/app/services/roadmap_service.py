@@ -188,6 +188,42 @@ class RoadmapService:
             return None
         return self._format_roadmap_model(rm)
 
+    def get_user_progress_summary(self, db: Session, *, user_id: int) -> dict[str, Any]:
+        """Aggregate progress across all roadmaps belonging to user."""
+        roadmaps = self.repo.get_user_roadmaps(db, user_id=user_id)
+        total_roadmaps = len(roadmaps)
+        active_roadmaps = sum(1 for r in roadmaps if r.status == "active")
+        completed_roadmaps = sum(1 for r in roadmaps if r.status == "completed")
+
+        total_milestones = sum(len(r.milestones) for r in roadmaps)
+        completed_milestones = sum(
+            1 for r in roadmaps for m in r.milestones if m.is_completed
+        )
+
+        total_skills = sum(
+            len(m.skills) for r in roadmaps for m in r.milestones
+        )
+        completed_skills = sum(
+            1 for r in roadmaps for m in r.milestones for s in m.skills if s.is_completed
+        )
+
+        completion_pct = (
+            round((completed_skills / total_skills) * 100.0, 1)
+            if total_skills > 0
+            else 0.0
+        )
+
+        return {
+            "total_roadmaps": total_roadmaps,
+            "active_roadmaps": active_roadmaps,
+            "completed_roadmaps": completed_roadmaps,
+            "total_milestones": total_milestones,
+            "completed_milestones": completed_milestones,
+            "total_skills": total_skills,
+            "completed_skills": completed_skills,
+            "overall_completion_percentage": completion_pct,
+        }
+
 
     def _format_roadmap_model(self, rm: LearningRoadmap) -> dict[str, Any]:
         """Transform SQLAlchemy ORM model to dictionary with embedded resources."""

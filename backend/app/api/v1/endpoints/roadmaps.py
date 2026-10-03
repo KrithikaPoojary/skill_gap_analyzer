@@ -70,6 +70,21 @@ def list_my_roadmaps(
     return ok(data={"roadmaps": roadmaps, "total": len(roadmaps)}).model_dump()
 
 
+@router.get(
+    "/me/progress",
+    summary="Get aggregated roadmap and milestone progress metrics for authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_roadmap_progress(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Calculate overall learning progress, completion percentage, and milestone stats."""
+    progress = roadmap_service.get_user_progress_summary(db, user_id=current_user.id)
+    return ok(data=progress).model_dump()
+
+
 @router.delete(
     "/me/{roadmap_id}",
     summary="Delete a saved roadmap belonging to authenticated user",
