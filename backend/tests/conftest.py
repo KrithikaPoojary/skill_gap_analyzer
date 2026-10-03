@@ -10,6 +10,7 @@ Fixtures added today:
 import pytest
 from starlette.testclient import TestClient
 
+from sqlalchemy import text
 from app.db.base import Base
 from app.db.session import engine
 import app.models  # noqa: F401
@@ -20,7 +21,15 @@ from app.main import app
 def setup_test_db():
     """Ensure all database tables exist before any tests execute."""
     Base.metadata.create_all(bind=engine)
+    with engine.connect() as conn:
+        for col, typ in [("last_login_at", "DATETIME"), ("login_count", "INTEGER DEFAULT 0")]:
+            try:
+                conn.execute(text(f"ALTER TABLE users ADD COLUMN {col} {typ}"))
+                conn.commit()
+            except Exception:
+                pass
     yield
+
 
 
 @pytest.fixture(scope="module")

@@ -5,8 +5,9 @@ supporting resumes, links, experience levels, and career details.
 """
 
 from __future__ import annotations
+from datetime import datetime
 from typing import TYPE_CHECKING
-from sqlalchemy import Boolean, Float, ForeignKey, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base, TimestampMixin
@@ -27,6 +28,9 @@ class User(Base, TimestampMixin):
     full_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     is_superuser: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    last_login_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    login_count: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+
 
     # 1-to-1 relationship with Profile
     profile: Mapped[Profile | None] = relationship(

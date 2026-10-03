@@ -61,9 +61,12 @@ class UserOut(BaseModel):
     is_active: bool
     is_superuser: bool
     created_at: Optional[datetime] = None
+    last_login_at: Optional[datetime] = None
+    login_count: int = 0
 
 
 class PasswordChangeRequest(BaseModel):
+
     """Payload for updating user password."""
 
     current_password: str = Field(..., min_length=1, description="Existing account password.")

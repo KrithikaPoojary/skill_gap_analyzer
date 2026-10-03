@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import logging
+from datetime import datetime, timezone
 from sqlalchemy.orm import Session
+
 
 from app.core.config import settings
 from app.core.security import (
@@ -72,7 +74,12 @@ class AuthService:
             return None
         if not verify_password(password, user.hashed_password):
             return None
+        user.last_login_at = datetime.now(timezone.utc)
+        user.login_count = (user.login_count or 0) + 1
+        db.commit()
+        db.refresh(user)
         return user
+
 
     def create_token_response(self, user: User) -> TokenResponse:
         """Issue a signed JWT access token response for an authenticated user."""
