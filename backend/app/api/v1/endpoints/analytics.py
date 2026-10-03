@@ -24,6 +24,21 @@ def get_market_overview(db: DbSession) -> dict[str, Any]:
 
 
 @router.get(
+    "/skills/trending",
+    summary="Trending and high-importance in-demand skills",
+    response_model=dict,
+)
+def get_trending_skills(
+    db: DbSession,
+    limit: int = Query(10, ge=1, le=50, description="Number of trending skills to return"),
+    min_importance: float = Query(0.0, ge=0.0, le=5.0, description="Minimum skill importance weight"),
+) -> dict[str, Any]:
+    """Retrieve top trending skills weighted by market penetration and required importance."""
+    trending = analytics_service.get_trending_skills(db, limit=limit, min_importance=min_importance)
+    return ok(data=trending).model_dump()
+
+
+@router.get(
     "/skills",
     summary="Skill demand rankings and category breakdown",
     response_model=dict,

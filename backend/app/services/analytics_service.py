@@ -67,6 +67,10 @@ class AnalyticsService:
             "category_distribution": category_dist,
         }
 
+    def get_trending_skills(self, db: Session, limit: int = 10, min_importance: float = 0.0) -> list[dict[str, Any]]:
+        """Fetch trending skills filtered by importance and ordered by demand."""
+        return skill_analyzer.get_trending_skills(db, limit=limit, min_importance=min_importance)
+
     def get_roles_analysis(self, db: Session) -> list[dict[str, Any]]:
         """Fetch role market share and seniority concentration."""
         roles = role_analyzer.get_role_distributions(db)

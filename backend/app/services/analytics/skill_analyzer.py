@@ -114,5 +114,31 @@ class SkillAnalyzer:
         rows = db.execute(stmt).all()
         return {r[0]: int(r[1]) for r in rows}
 
+    def get_trending_skills(
+        self,
+        db: Session,
+        *,
+        limit: int = 10,
+        min_importance: float = 0.0,
+    ) -> list[dict[str, Any]]:
+        """Fetch trending/high-demand skills ordered by importance and job posting volume."""
+        records = self.get_top_skills(db, limit=limit * 2)
+        filtered = [
+            r for r in records if r.avg_importance >= min_importance
+        ][:limit]
+        return [
+            {
+                "rank": idx + 1,
+                "skill_id": r.skill_id,
+                "skill_name": r.skill_name,
+                "category": r.category,
+                "total_postings": r.total_postings,
+                "market_penetration_pct": r.market_penetration_pct,
+                "mandatory_count": r.mandatory_count,
+                "avg_importance": r.avg_importance,
+            }
+            for idx, r in enumerate(filtered)
+        ]
+
 
 skill_analyzer = SkillAnalyzer()
