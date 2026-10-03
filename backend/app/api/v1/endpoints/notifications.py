@@ -54,8 +54,23 @@ def mark_all_notifications_read(current_user: CurrentUser, db: DbSession) -> Any
     return {"marked_read": count}
 
 
+@router.delete("/clear-read", summary="Clear all read notifications", response_model=dict)
+def clear_read_notifications(current_user: CurrentUser, db: DbSession) -> Any:
+    """Delete all read notifications for the current authenticated user."""
+    count = notification_service.clear_read_notifications(db, user_id=current_user.id)
+    return {"deleted_count": count}
+
+
+@router.delete("/clear-all", summary="Clear all notifications in inbox", response_model=dict)
+def clear_all_notifications(current_user: CurrentUser, db: DbSession) -> Any:
+    """Delete all notifications for the current authenticated user."""
+    count = notification_service.clear_all_notifications(db, user_id=current_user.id)
+    return {"deleted_count": count}
+
+
 @router.delete(
     "/{notification_id}",
+
     summary="Delete a notification",
     status_code=status.HTTP_204_NO_CONTENT,
     response_model=None,

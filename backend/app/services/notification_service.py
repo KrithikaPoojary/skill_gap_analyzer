@@ -73,3 +73,22 @@ def delete_notification(db: Session, *, notification_id: int, user_id: int) -> b
         db.commit()
         return True
     return False
+
+
+def clear_read_notifications(db: Session, *, user_id: int) -> int:
+    """Delete all read notifications for a given user."""
+    count = (
+        db.query(Notification)
+        .filter(Notification.user_id == user_id, Notification.is_read.is_(True))
+        .delete()
+    )
+    db.commit()
+    return count
+
+
+def clear_all_notifications(db: Session, *, user_id: int) -> int:
+    """Delete all notifications for a given user."""
+    count = db.query(Notification).filter(Notification.user_id == user_id).delete()
+    db.commit()
+    return count
+
