@@ -123,6 +123,28 @@ class AuthService:
         logger.info("Account deactivated for user id=%d.", user.id)
         return True
 
+    def reactivate_account(self, db: Session, email: str, password: str) -> User:
+        """Reactivate a previously deactivated account using valid credentials."""
+        user = self._user_repo.get_by_email(db, email=email)
+        if not user:
+            raise ValueError("Account not found.")
+        if not verify_password(password, user.hashed_password):
+            raise ValueError("Invalid password.")
+        user.is_active = True
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        logger.info("Account reactivated for user id=%d.", user.id)
+        return user
+
+    def hard_delete_account(self, db: Session, user: User) -> bool:
+        """Permanently delete user account and all cascaded profile data."""
+        db.delete(user)
+        db.commit()
+        logger.info("Account hard-deleted for user id=%d.", user.id)
+        return True
+
+
     def request_password_reset(self, db: Session, email: str) -> str | None:
         """Issue a password reset token for the given account email."""
         user = self._user_repo.get_by_email(db, email=email)

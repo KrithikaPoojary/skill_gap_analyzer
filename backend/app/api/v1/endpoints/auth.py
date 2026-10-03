@@ -22,9 +22,11 @@ from app.schemas.auth import (
     PasswordChangeRequest,
     ResetPasswordRequest,
     TokenResponse,
+    UserLoginRequest,
     UserOut,
     UserRegisterRequest,
 )
+
 from app.services.auth_service import auth_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -133,8 +135,47 @@ def deactivate_me(
     return {"message": "Account deactivated successfully."}
 
 
+@router.delete(
+    "/me/permanent",
+    response_model=dict,
+    status_code=status.HTTP_200_OK,
+    summary="Permanently delete current user's account",
+    description="Completely delete the authenticated user's account and all cascaded data.",
+)
+def delete_me_permanently(
+    current_user: CurrentActiveUser,
+    db: DbSession,
+) -> dict:
+    """Permanently delete authenticated user account."""
+    auth_service.hard_delete_account(db, current_user)
+    return {"message": "Account permanently deleted."}
+
+
+@router.post(
+    "/reactivate",
+    response_model=TokenResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Reactivate a deactivated account",
+    description="Reactivate an inactive user account using valid credentials and issue a new JWT access token.",
+)
+def reactivate_account(
+    req: UserLoginRequest,
+    db: DbSession,
+) -> TokenResponse:
+    """Reactivate account and return auth token."""
+    try:
+        user = auth_service.reactivate_account(db, email=req.email, password=req.password)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    return auth_service.create_token_response(user)
+
+
 @router.post(
     "/forgot-password",
+
     response_model=dict,
     status_code=status.HTTP_200_OK,
     summary="Request a password reset link",
