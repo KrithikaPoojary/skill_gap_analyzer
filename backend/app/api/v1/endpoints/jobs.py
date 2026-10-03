@@ -16,6 +16,7 @@ from app.schemas.job import JobCreate, JobRead, JobUpdate
 from app.schemas.job_filter import JobFilterParams
 from app.schemas.pagination import PaginatedResponse, PaginationParams
 from app.schemas.response import ok
+from app.repositories.saved_job_repo import saved_job_repository
 from app.services.ingestion_service import ingestion_service
 from app.services.ingestion_telemetry import ingestion_telemetry
 from app.services.job_service import job_service
@@ -143,6 +144,23 @@ def get_job(job_id: int, db: DbSession) -> dict:
             detail=f"Job posting with id {job_id} not found",
         )
     return ok(data=JobRead.model_validate(job).model_dump()).model_dump()
+
+
+@router.get(
+    "/{job_id}/stats",
+    summary="Get bookmark and application engagement statistics for a job posting",
+    response_model=dict,
+)
+def get_job_engagement_stats(job_id: int, db: DbSession) -> dict:
+    """Retrieve engagement metrics (saved count, application count, breakdown) for a job."""
+    job = job_service.get_by_id(db, job_id)
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job posting with id {job_id} not found",
+        )
+    stats = saved_job_repository.get_stats_by_job(db, job_id=job_id)
+    return ok(data=stats).model_dump()
 
 
 @router.patch(

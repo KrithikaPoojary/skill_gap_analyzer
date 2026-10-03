@@ -130,5 +130,28 @@ class SavedJobRepository:
         db.commit()
         return True
 
+    def get_stats_by_job(
+        self,
+        db: Session,
+        *,
+        job_id: int,
+    ) -> dict[str, Any]:
+        """Aggregate bookmarks and application counts for a job posting."""
+        stmt = (
+            select(UserSavedJob.status, func.count(UserSavedJob.id))
+            .where(UserSavedJob.job_id == job_id)
+            .group_by(UserSavedJob.status)
+        )
+        rows = db.execute(stmt).all()
+        status_counts = {str(status.value if hasattr(status, "value") else status): count for status, count in rows}
+        total_saved = sum(status_counts.values())
+        applications = sum(count for s, count in status_counts.items() if s != ApplicationStatus.SAVED.value)
+        return {
+            "job_id": job_id,
+            "total_saved": total_saved,
+            "application_count": applications,
+            "status_breakdown": status_counts,
+        }
+
 
 saved_job_repository = SavedJobRepository()
