@@ -34,6 +34,15 @@ def list_my_notifications(
     ]
 
 
+@router.get("/unread-count", summary="Get unread notification count for current user", response_model=dict)
+def get_unread_count(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> Any:
+    count = notification_service.get_unread_count(db, user_id=current_user.id)
+    return {"unread_count": count}
+
+
 @router.patch("/{notification_id}/read", summary="Mark a notification as read", response_model=dict)
 def mark_notification_read(
     notification_id: int,

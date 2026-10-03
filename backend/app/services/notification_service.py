@@ -92,3 +92,13 @@ def clear_all_notifications(db: Session, *, user_id: int) -> int:
     db.commit()
     return count
 
+
+def get_unread_count(db: Session, *, user_id: int) -> int:
+    """Return count of unread notifications for a user."""
+    return (
+        db.query(Notification)
+        .filter(Notification.user_id == user_id, Notification.is_read.is_(False))
+        .count()
+    )
+
+
