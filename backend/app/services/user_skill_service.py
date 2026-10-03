@@ -116,6 +116,34 @@ class UserSkillService:
         db.commit()
         return True
 
+    def update_user_skill(
+        self,
+        db: Session,
+        *,
+        user_id: int,
+        skill_id: int,
+        proficiency_level: str | None = None,
+        years_of_experience: float | None = None,
+    ) -> UserSkill | None:
+        """Update proficiency or experience for an existing user skill association."""
+        stmt = (
+            select(UserSkill)
+            .where(UserSkill.user_id == user_id, UserSkill.skill_id == skill_id)
+            .options(joinedload(UserSkill.skill))
+        )
+        user_skill = db.scalar(stmt)
+        if not user_skill:
+            return None
+
+        if proficiency_level is not None:
+            user_skill.proficiency_level = proficiency_level
+        if years_of_experience is not None:
+            user_skill.years_of_experience = years_of_experience
+
+        db.commit()
+        db.refresh(user_skill)
+        return user_skill
+
     def get_user_skills(self, db: Session, *, user_id: int) -> list[UserSkill]:
         """Fetch all skills associated with a user, with Skill entity eagerly loaded."""
         stmt = (

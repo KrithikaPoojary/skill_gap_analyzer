@@ -10,6 +10,7 @@ from app.schemas.profile import (
     ProfileUpsertRequest,
     UserSkillCreateRequest,
     UserSkillResponse,
+    UserSkillUpdateRequest,
 )
 from app.schemas.response import ok
 from app.services.profile_service import profile_service
@@ -131,6 +132,42 @@ def bulk_add_my_skills(
     return ok(
         data={"added_count": len(added), "skills": [us.skill.name for us in added if us.skill]},
         message=f"Added {len(added)} skills to your profile.",
+    ).model_dump()
+
+
+@router.patch(
+    "/me/skills/{skill_id}",
+    summary="Update proficiency level or experience for a skill on candidate profile",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def update_my_skill(
+    skill_id: int,
+    payload: UserSkillUpdateRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Update proficiency or experience for an attached skill."""
+    updated = user_skill_service.update_user_skill(
+        db,
+        user_id=current_user.id,
+        skill_id=skill_id,
+        proficiency_level=payload.proficiency_level,
+        years_of_experience=payload.years_of_experience,
+    )
+    if not updated:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Skill {skill_id} not found on your profile.",
+        )
+    return ok(
+        data={
+            "skill_id": updated.skill_id,
+            "name": updated.skill.name if updated.skill else None,
+            "proficiency_level": updated.proficiency_level,
+            "years_of_experience": updated.years_of_experience,
+        },
+        message="Skill updated successfully.",
     ).model_dump()
 
 

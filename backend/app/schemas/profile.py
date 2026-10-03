@@ -24,6 +24,22 @@ class UserSkillCreateRequest(BaseModel):
     is_verified: bool = Field(False, description="Whether verified by assessment or credential")
 
 
+class UserSkillUpdateRequest(BaseModel):
+    """Payload to update an existing user skill on candidate profile."""
+
+    proficiency_level: str | None = Field(
+        None,
+        pattern=r"^(beginner|intermediate|advanced|expert)$",
+        description="Proficiency level: beginner, intermediate, advanced, expert",
+    )
+    years_of_experience: float | None = Field(
+        None,
+        ge=0.0,
+        le=60.0,
+        description="Years of hands-on experience",
+    )
+
+
 class UserSkillResponse(BaseModel):
     """Details of a user's associated skill."""
 
