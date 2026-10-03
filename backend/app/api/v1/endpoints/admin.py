@@ -7,6 +7,8 @@ from fastapi import APIRouter, HTTPException, Query, Response, status
 
 
 from app.api.deps import CurrentSuperuser, DbSession
+from app.models.skill import Skill
+from app.repositories.skill_repo import skill_repository
 from app.repositories.user_repo import user_repository
 from app.services import notification_service
 from app.services.platform_stats_service import platform_stats_service
@@ -198,4 +200,89 @@ def promote_user(user_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
 def get_platform_overview(_: CurrentSuperuser, db: DbSession) -> Any:
     """Return platform-wide operational statistics for monitoring dashboards."""
     return platform_stats_service.get_overview(db)
+
+
+from pydantic import BaseModel, Field
+
+
+class AdminSkillCreate(BaseModel):
+    name: str = Field(..., min_length=1, max_length=100)
+    category: str = Field("other", max_length=50)
+    description: str | None = None
+    aliases: str | None = None
+    is_verified: bool = True
+
+
+class AdminSkillUpdate(BaseModel):
+    name: str | None = Field(None, min_length=1, max_length=100)
+    category: str | None = Field(None, max_length=50)
+    description: str | None = None
+    aliases: str | None = None
+    is_verified: bool | None = None
+
+
+@router.post("/skills", summary="Create a new verified skill in the taxonomy", status_code=status.HTTP_201_CREATED, response_model=dict)
+def create_skill(payload: AdminSkillCreate, _: CurrentSuperuser, db: DbSession) -> Any:
+    """Create a new skill in the catalog."""
+    normalized = payload.name.strip().lower()
+    existing = skill_repository.get_by_normalized_name(db, normalized_name=normalized)
+    if existing:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Skill '{payload.name}' already exists")
+    skill = Skill(
+        name=payload.name.strip(),
+        normalized_name=normalized,
+        category=payload.category.strip().lower(),
+        description=payload.description,
+        aliases=payload.aliases,
+        is_verified=payload.is_verified,
+    )
+    db.add(skill)
+    db.commit()
+    db.refresh(skill)
+    return {
+        "id": skill.id,
+        "name": skill.name,
+        "normalized_name": skill.normalized_name,
+        "category": skill.category,
+        "is_verified": skill.is_verified,
+    }
+
+
+@router.patch("/skills/{skill_id}", summary="Update a skill in the taxonomy", response_model=dict)
+def update_skill(skill_id: int, payload: AdminSkillUpdate, _: CurrentSuperuser, db: DbSession) -> Any:
+    """Update details of a skill."""
+    skill = db.get(Skill, skill_id)
+    if not skill:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Skill not found")
+    if payload.name is not None:
+        skill.name = payload.name.strip()
+        skill.normalized_name = payload.name.strip().lower()
+    if payload.category is not None:
+        skill.category = payload.category.strip().lower()
+    if payload.description is not None:
+        skill.description = payload.description
+    if payload.aliases is not None:
+        skill.aliases = payload.aliases
+    if payload.is_verified is not None:
+        skill.is_verified = payload.is_verified
+    db.commit()
+    db.refresh(skill)
+    return {
+        "id": skill.id,
+        "name": skill.name,
+        "category": skill.category,
+        "is_verified": skill.is_verified,
+    }
+
+
+@router.delete("/skills/{skill_id}", summary="Delete a skill from taxonomy", response_model=dict)
+def delete_skill(skill_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
+    """Permanently delete a skill from the catalog."""
+    skill = db.get(Skill, skill_id)
+    if not skill:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Skill not found")
+    name = skill.name
+    db.delete(skill)
+    db.commit()
+    return {"deleted": True, "id": skill_id, "name": name}
 
