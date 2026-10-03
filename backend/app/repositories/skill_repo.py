@@ -51,5 +51,22 @@ class SkillRepository(BaseRepository[Skill]):
         )
         return list(db.scalars(stmt).all())
 
+    def get_category_stats(self, db: Session) -> list[dict]:
+        """Return all taxonomy categories with the count of skills in each."""
+        from sqlalchemy import func
+        from app.models.skill import SkillCategory
+
+        stmt = select(Skill.category, func.count(Skill.id)).group_by(Skill.category)
+        counts = dict(db.execute(stmt).all())
+
+        results = []
+        for cat in SkillCategory:
+            results.append({
+                "category": cat.value,
+                "label": cat.value.replace("_", " ").title(),
+                "skill_count": counts.get(cat.value, 0),
+            })
+        return results
+
 
 skill_repository = SkillRepository()

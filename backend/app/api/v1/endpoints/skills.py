@@ -23,6 +23,18 @@ router = APIRouter(prefix="/skills", tags=["Skill Extraction"])
 
 
 @router.get(
+    "/categories",
+    summary="List skill taxonomy categories and counts",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def list_skill_categories(db: DbSession) -> dict[str, Any]:
+    """Retrieve all available skill categories with current skill counts."""
+    stats = skill_repository.get_category_stats(db)
+    return ok(data=stats).model_dump()
+
+
+@router.get(
     "/catalog",
     summary="Browse the skill catalog with optional search filter",
     status_code=status.HTTP_200_OK,
