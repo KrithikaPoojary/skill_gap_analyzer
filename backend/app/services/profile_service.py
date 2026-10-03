@@ -166,14 +166,20 @@ class ProfileService:
     def get_user_stats(self, db: Session, user_id: int) -> dict[str, Any]:
         """Return aggregated profile statistics for a user."""
         from app.models.roadmap import LearningRoadmap
+        from app.models.gap_snapshot import SkillGapSnapshot
+        from sqlalchemy import func
 
         profile = self.get_by_user_id(db, user_id=user_id)
+        user = db.get(User, user_id)
         skills_stmt = select(UserSkill).where(UserSkill.user_id == user_id)
         user_skills = list(db.scalars(skills_stmt).all())
 
         roadmap_count = db.scalar(
-            select(LearningRoadmap).where(LearningRoadmap.user_id == user_id)
-        )
+            select(func.count()).select_from(LearningRoadmap).where(LearningRoadmap.user_id == user_id)
+        ) or 0
+        snapshot_count = db.scalar(
+            select(func.count()).select_from(SkillGapSnapshot).where(SkillGapSnapshot.user_id == user_id)
+        ) or 0
 
         proficiency_map = {"beginner": 1, "intermediate": 2, "advanced": 3, "expert": 4}
         levels = [proficiency_map.get(s.proficiency_level or "", 0) for s in user_skills]
@@ -185,7 +191,12 @@ class ProfileService:
             "headline": profile.headline if profile else None,
             "years_of_experience": profile.years_of_experience if profile else None,
             "profile_complete": profile is not None,
+            "roadmap_count": roadmap_count,
+            "snapshot_count": snapshot_count,
+            "login_count": getattr(user, "login_count", 0) if user else 0,
+            "last_login_at": user.last_login_at.isoformat() if user and getattr(user, "last_login_at", None) else None,
         }
 
 
 profile_service = ProfileService()
+
