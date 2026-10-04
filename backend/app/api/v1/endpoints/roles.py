@@ -206,6 +206,32 @@ def set_my_target_role(
     return ok(data=result.model_dump(), message="Target role tracked successfully.").model_dump()
 
 
+@router.get(
+    "/me/targets/{role_id}",
+    summary="Check if a target role is tracked and get readiness score",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_target_role_status(
+    role_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Check if the authenticated user is tracking this target role."""
+    assoc = role_repository.get_user_target_role(db, user_id=current_user.id, role_id=role_id)
+    if not assoc:
+        return ok(data={"is_tracked": False, "role_id": role_id, "tracking": None}).model_dump()
+    data = {
+        "is_tracked": True,
+        "role_id": assoc.role_id,
+        "role_title": assoc.role.title if assoc.role else None,
+        "readiness_score": assoc.readiness_score,
+        "target_date": assoc.target_date.isoformat() if assoc.target_date else None,
+        "created_at": assoc.created_at.isoformat() if assoc.created_at else None,
+    }
+    return ok(data={"is_tracked": True, "role_id": role_id, "tracking": data}).model_dump()
+
+
 @router.delete(
     "/me/targets/{role_id}",
     summary="Untrack a target role for authenticated user",

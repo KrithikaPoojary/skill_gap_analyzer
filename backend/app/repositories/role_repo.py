@@ -89,6 +89,18 @@ class RoleRepository(BaseRepository[TargetRole]):
         )
         return list(db.scalars(stmt).unique().all())
 
+    def get_user_target_role(self, db: Session, *, user_id: int, role_id: int) -> UserTargetRole | None:
+        """Fetch tracking details for a specific user and role."""
+        stmt = (
+            select(UserTargetRole)
+            .options(joinedload(UserTargetRole.role))
+            .where(
+                UserTargetRole.user_id == user_id,
+                UserTargetRole.role_id == role_id,
+            )
+        )
+        return db.scalar(stmt)
+
     def remove_user_target_role(self, db: Session, *, user_id: int, role_id: int) -> bool:
         """Remove target role tracking for a user."""
         stmt = delete(UserTargetRole).where(
