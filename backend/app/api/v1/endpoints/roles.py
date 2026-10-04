@@ -109,6 +109,41 @@ def get_role_detail(role_id: int, db: DbSession) -> dict[str, Any]:
 
 
 @router.get(
+    "/{role_id}/skills",
+    summary="Get required skills for a target role",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_role_skills(role_id: int, db: DbSession) -> dict[str, Any]:
+    """Retrieve benchmark skills, weights, and proficiency requirements for a role."""
+    role = role_repository.get_role_with_skills(db, role_id=role_id)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Target role with ID {role_id} not found.",
+        )
+    skills_data = [
+        {
+            "skill_id": rw.skill_id,
+            "skill_name": rw.skill.name if rw.skill else None,
+            "category": rw.skill.category if rw.skill else None,
+            "weight": rw.weight,
+            "is_core": rw.is_core,
+            "benchmark_level": rw.benchmark_level,
+        }
+        for rw in sorted(role.role_skills, key=lambda x: (x.is_core, x.weight), reverse=True)
+    ]
+    return ok(
+        data={
+            "role_id": role.id,
+            "title": role.title,
+            "total_skills": len(skills_data),
+            "skills": skills_data,
+        }
+    ).model_dump()
+
+
+@router.get(
     "/me/targets",
     summary="List authenticated user's tracked target roles",
     status_code=status.HTTP_200_OK,
