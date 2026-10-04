@@ -197,6 +197,88 @@ class ProfileService:
             "last_login_at": user.last_login_at.isoformat() if user and getattr(user, "last_login_at", None) else None,
         }
 
+    def get_user_skill_gaps(self, db: Session, user_id: int) -> dict[str, Any]:
+        """Compute aggregated missing skill gaps across all tracked target roles."""
+        from app.models.role import RoleSkillWeighting
+
+        # 1. Get user's current skill IDs
+        user_skills_stmt = select(UserSkill).where(UserSkill.user_id == user_id)
+        user_skills = list(db.scalars(user_skills_stmt).all())
+        user_skill_ids = {us.skill_id for us in user_skills}
+
+        # 2. Get user's target roles
+        target_roles_stmt = (
+            select(UserTargetRole)
+            .options(joinedload(UserTargetRole.role))
+            .where(UserTargetRole.user_id == user_id)
+        )
+        target_roles = list(db.scalars(target_roles_stmt).all())
+
+        missing_skills_map: dict[int, dict[str, Any]] = {}
+        role_breakdown = []
+
+        for utr in target_roles:
+            if not utr.role:
+                continue
+            # Get required role skills
+            weightings_stmt = (
+                select(RoleSkillWeighting)
+                .options(joinedload(RoleSkillWeighting.skill))
+                .where(RoleSkillWeighting.role_id == utr.role_id)
+            )
+            weightings = list(db.scalars(weightings_stmt).all())
+
+            role_missing = []
+            for w in weightings:
+                if not w.skill:
+                    continue
+                if w.skill_id not in user_skill_ids:
+                    role_missing.append({
+                        "skill_id": w.skill_id,
+                        "name": w.skill.name,
+                        "category": w.skill.category,
+                        "weight": w.weight,
+                        "is_core": w.is_core,
+                        "benchmark_level": w.benchmark_level,
+                    })
+                    if w.skill_id not in missing_skills_map:
+                        missing_skills_map[w.skill_id] = {
+                            "skill_id": w.skill_id,
+                            "name": w.skill.name,
+                            "category": w.skill.category,
+                            "roles_requiring": [utr.role.title],
+                            "max_weight": w.weight,
+                            "is_core": w.is_core,
+                        }
+                    else:
+                        if utr.role.title not in missing_skills_map[w.skill_id]["roles_requiring"]:
+                            missing_skills_map[w.skill_id]["roles_requiring"].append(utr.role.title)
+                        missing_skills_map[w.skill_id]["max_weight"] = max(
+                            missing_skills_map[w.skill_id]["max_weight"], w.weight
+                        )
+                        if w.is_core:
+                            missing_skills_map[w.skill_id]["is_core"] = True
+
+            role_breakdown.append({
+                "role_id": utr.role_id,
+                "role_title": utr.role.title,
+                "total_required_skills": len(weightings),
+                "missing_skills_count": len(role_missing),
+                "missing_skills": role_missing,
+            })
+
+        return {
+            "total_tracked_roles": len(target_roles),
+            "total_missing_unique_skills": len(missing_skills_map),
+            "missing_skills": sorted(
+                list(missing_skills_map.values()),
+                key=lambda x: (x["is_core"], x["max_weight"]),
+                reverse=True,
+            ),
+            "roles": role_breakdown,
+        }
+
 
 profile_service = ProfileService()
+
 
