@@ -24,6 +24,17 @@ def get_market_overview(db: DbSession) -> dict[str, Any]:
 
 
 @router.get(
+    "/summary",
+    summary="High-level platform KPI analytics summary",
+    response_model=dict,
+)
+def get_analytics_summary(db: DbSession) -> dict[str, Any]:
+    """Retrieve high-level KPI summary (jobs, skills, roles, users, remote ratio)."""
+    summary = analytics_service.get_platform_summary(db)
+    return ok(data=summary).model_dump()
+
+
+@router.get(
     "/skills/trending",
     summary="Trending and high-importance in-demand skills",
     response_model=dict,

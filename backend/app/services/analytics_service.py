@@ -98,5 +98,28 @@ class AnalyticsService:
             "remote_summary": remote_summary.to_dict(),
         }
 
+    def get_trending_skills(self, db: Session, *, limit: int = 10, min_importance: float = 0.0) -> list[dict[str, Any]]:
+        """Fetch high-importance trending skills."""
+        return skill_analyzer.get_trending_skills(db, limit=limit, min_importance=min_importance)
+
+    def get_platform_summary(self, db: Session) -> dict[str, Any]:
+        """Produce high-level KPI metrics summary for platform intelligence."""
+        from app.models.role import TargetRole
+        from app.models.user import User
+
+        active_jobs = db.scalar(select(func.count(JobPosting.id)).where(JobPosting.is_active.is_(True))) or 0
+        total_skills = db.scalar(select(func.count(Skill.id))) or 0
+        total_roles = db.scalar(select(func.count(TargetRole.id)).where(TargetRole.is_active.is_(True))) or 0
+        total_users = db.scalar(select(func.count(User.id)).where(User.is_active.is_(True))) or 0
+        remote_summary = geo_analyzer.get_remote_summary(db)
+
+        return {
+            "active_jobs": active_jobs,
+            "total_skills": total_skills,
+            "total_target_roles": total_roles,
+            "total_active_users": total_users,
+            "remote_job_ratio_pct": remote_summary.overall_remote_pct,
+        }
+
 
 analytics_service = AnalyticsService()
