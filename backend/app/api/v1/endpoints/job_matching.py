@@ -136,6 +136,32 @@ def save_job(
     return ok(data=read_obj.model_dump(), message="Job bookmarked successfully.").model_dump()
 
 
+@router.get(
+    "/{job_id}/saved",
+    summary="Check bookmark status of a specific job for authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def check_job_saved(
+    job_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Check if the specified job is bookmarked by current user."""
+    record = saved_job_repository.get_by_user_and_job(db, user_id=current_user.id, job_id=job_id)
+    if not record:
+        return ok(data={"is_saved": False, "job_id": job_id}).model_dump()
+    return ok(
+        data={
+            "is_saved": True,
+            "job_id": job_id,
+            "status": record.status.value,
+            "notes": record.notes,
+            "applied_at": record.applied_at.isoformat() if record.applied_at else None,
+        }
+    ).model_dump()
+
+
 @router.delete(
     "/{job_id}/save",
     summary="Remove a bookmarked job for the authenticated user",
