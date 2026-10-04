@@ -35,6 +35,18 @@ def get_analytics_summary(db: DbSession) -> dict[str, Any]:
 
 
 @router.get(
+    "/breakdown",
+    summary="Market distribution by employment type and experience level",
+    response_model=dict,
+)
+def get_market_breakdown(db: DbSession) -> dict[str, Any]:
+    """Retrieve active job postings breakdown by employment type and seniority level."""
+    breakdown = analytics_service.get_market_breakdown(db)
+    return ok(data=breakdown).model_dump()
+
+
+
+@router.get(
     "/skills/trending",
     summary="Trending and high-importance in-demand skills",
     response_model=dict,

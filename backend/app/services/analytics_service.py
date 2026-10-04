@@ -98,9 +98,49 @@ class AnalyticsService:
             "remote_summary": remote_summary.to_dict(),
         }
 
-    def get_trending_skills(self, db: Session, *, limit: int = 10, min_importance: float = 0.0) -> list[dict[str, Any]]:
-        """Fetch high-importance trending skills."""
-        return skill_analyzer.get_trending_skills(db, limit=limit, min_importance=min_importance)
+    def get_market_breakdown(self, db: Session) -> dict[str, Any]:
+        """Fetch market distribution broken down by employment type and experience level."""
+        total_active = db.scalar(
+            select(func.count(JobPosting.id)).where(JobPosting.is_active.is_(True))
+        ) or 0
+
+        # Employment type breakdown
+        emp_stmt = (
+            select(JobPosting.employment_type, func.count(JobPosting.id))
+            .where(JobPosting.is_active.is_(True))
+            .group_by(JobPosting.employment_type)
+        )
+        emp_rows = db.execute(emp_stmt).all()
+        employment_types = [
+            {
+                "employment_type": row[0],
+                "count": row[1],
+                "percentage": round((row[1] / total_active * 100), 2) if total_active > 0 else 0.0,
+            }
+            for row in sorted(emp_rows, key=lambda x: x[1], reverse=True)
+        ]
+
+        # Experience level breakdown
+        exp_stmt = (
+            select(JobPosting.experience_level, func.count(JobPosting.id))
+            .where(JobPosting.is_active.is_(True))
+            .group_by(JobPosting.experience_level)
+        )
+        exp_rows = db.execute(exp_stmt).all()
+        experience_levels = [
+            {
+                "experience_level": row[0],
+                "count": row[1],
+                "percentage": round((row[1] / total_active * 100), 2) if total_active > 0 else 0.0,
+            }
+            for row in sorted(exp_rows, key=lambda x: x[1], reverse=True)
+        ]
+
+        return {
+            "total_active_jobs": total_active,
+            "by_employment_type": employment_types,
+            "by_experience_level": experience_levels,
+        }
 
     def get_platform_summary(self, db: Session) -> dict[str, Any]:
         """Produce high-level KPI metrics summary for platform intelligence."""
