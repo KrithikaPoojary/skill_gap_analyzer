@@ -86,6 +86,25 @@ def get_my_roadmap_progress(
 
 
 @router.get(
+    "/me/active",
+    summary="Get candidate's currently active learning roadmap",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_active_roadmap(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Retrieve the candidate's primary in-progress active learning roadmap."""
+    roadmaps = roadmap_service.get_user_roadmaps(db, user_id=current_user.id, status="active")
+    if not roadmaps:
+        return ok(data={"has_active_roadmap": False, "roadmap": None}).model_dump()
+    active_rm = roadmaps[0]
+    details = roadmap_service.get_user_roadmap_by_id(db, user_id=current_user.id, roadmap_id=active_rm["id"])
+    return ok(data={"has_active_roadmap": True, "roadmap": details}).model_dump()
+
+
+@router.get(
     "/me/{roadmap_id}",
     summary="Get single roadmap details belonging to authenticated user",
     status_code=status.HTTP_200_OK,
