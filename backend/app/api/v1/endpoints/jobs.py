@@ -192,6 +192,31 @@ def get_job_engagement_stats(job_id: int, db: DbSession) -> dict:
     return ok(data=stats).model_dump()
 
 
+@router.get(
+    "/{job_id}/skills",
+    summary="Get all skills required and preferred for a job posting",
+    response_model=dict,
+)
+def get_job_skills(job_id: int, db: DbSession) -> dict:
+    """Retrieve all linked skills and requirement weights for a job posting."""
+    job = job_service.get_by_id(db, job_id)
+    if job is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Job posting with id {job_id} not found",
+        )
+    skills = job_service.get_job_skills(db, job_id=job_id)
+    return ok(
+        data={
+            "job_id": job_id,
+            "title": job.title,
+            "total_skills": len(skills),
+            "skills": skills,
+        }
+    ).model_dump()
+
+
+
 @router.patch(
     "/{job_id}",
     summary="Partially update a job posting",

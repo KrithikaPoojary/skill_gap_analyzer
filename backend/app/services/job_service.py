@@ -5,11 +5,13 @@ job postings. Keeps route handlers thin by coordinating repository calls,
 schema transformations, and domain validation.
 """
 
+from typing import Any
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
 from app.models.associations import JobSkill
 from app.models.job import JobPosting
+from app.models.skill import Skill
 from app.schemas.job import JobCreate, JobRead, JobUpdate
 from app.schemas.job_filter import JobFilterParams
 from app.schemas.pagination import PaginatedResponse, PaginationMeta, PaginationParams
@@ -21,6 +23,26 @@ class JobService:
     def get_by_id(self, db: Session, job_id: int) -> JobPosting | None:
         """Fetch a single job posting by primary key."""
         return db.get(JobPosting, job_id)
+
+    def get_job_skills(self, db: Session, job_id: int) -> list[dict[str, Any]]:
+        """Fetch all skills associated with a specific job posting with requirement details."""
+        stmt = (
+            select(JobSkill, Skill)
+            .join(Skill, JobSkill.skill_id == Skill.id)
+            .where(JobSkill.job_id == job_id)
+            .order_by(JobSkill.is_required.desc(), JobSkill.importance_weight.desc())
+        )
+        results = db.execute(stmt).all()
+        return [
+            {
+                "skill_id": skill.id,
+                "skill_name": skill.name,
+                "category": skill.category,
+                "is_required": js.is_required,
+                "importance_weight": js.importance_weight,
+            }
+            for js, skill in results
+        ]
 
     def get_paginated(
         self,
