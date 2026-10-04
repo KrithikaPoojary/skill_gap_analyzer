@@ -105,3 +105,27 @@ class TestAdminSkills:
         assert resp_filtered.status_code == 200
         assert resp_filtered.json()["total"] == 0
 
+    def test_verify_taxonomy_skill(self, client: TestClient) -> None:
+        token = self._create_superuser_token(client)
+        headers = {"Authorization": f"Bearer {token}"}
+        unique_name = f"UnverifiedSkill_{uuid.uuid4().hex[:6]}"
+
+        # Create unverified skill
+        create_resp = client.post(
+            "/api/v1/admin/skills",
+            json={"name": unique_name, "category": "other", "is_verified": False},
+            headers=headers,
+        )
+        assert create_resp.status_code == 201
+        skill_id = create_resp.json()["id"]
+        assert create_resp.json()["is_verified"] is False
+
+        # Verify it
+        verify_resp = client.patch(
+            f"/api/v1/admin/skills/{skill_id}/verify?verified=true",
+            headers=headers,
+        )
+        assert verify_resp.status_code == 200
+        assert verify_resp.json()["is_verified"] is True
+
+

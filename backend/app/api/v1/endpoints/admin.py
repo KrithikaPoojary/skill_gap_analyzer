@@ -309,6 +309,28 @@ def update_skill(skill_id: int, payload: AdminSkillUpdate, _: CurrentSuperuser, 
     }
 
 
+@router.patch("/skills/{skill_id}/verify", summary="Toggle or set skill verification status", response_model=dict)
+def verify_taxonomy_skill(
+    skill_id: int,
+    _: CurrentSuperuser,
+    db: DbSession,
+    verified: bool = Query(True, description="Verification status to set"),
+) -> Any:
+    """Set is_verified on a taxonomy skill."""
+    skill = db.get(Skill, skill_id)
+    if not skill:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Skill not found")
+    skill.is_verified = verified
+    db.commit()
+    db.refresh(skill)
+    return {
+        "id": skill.id,
+        "name": skill.name,
+        "is_verified": skill.is_verified,
+        "message": f"Skill verification set to {verified}",
+    }
+
+
 @router.delete("/skills/{skill_id}", summary="Delete a skill from taxonomy", response_model=dict)
 def delete_skill(skill_id: int, _: CurrentSuperuser, db: DbSession) -> Any:
     """Permanently delete a skill from the catalog."""
