@@ -85,6 +85,35 @@ def list_jobs(
     return ok(data=result.model_dump()).model_dump()
 
 
+@router.get(
+    "/search",
+    summary="Search job postings by keyword and criteria",
+    response_model=dict,
+)
+def search_jobs(
+    db: DbSession,
+    q: str = Query(..., min_length=1, description="Search keyword"),
+    location: str | None = Query(None, description="Location filter"),
+    is_remote: bool | None = Query(None, description="Remote positions only"),
+    experience_level: ExperienceLevel | None = Query(None, description="Seniority level"),
+    min_salary: float | None = Query(None, ge=0, description="Minimum salary threshold"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(20, ge=1, le=100, description="Items per page"),
+) -> dict:
+    """Full-text search jobs with keyword and optional filters."""
+    params = PaginationParams(page=page, page_size=page_size)
+    filters = JobFilterParams(
+        query=q,
+        location=location,
+        is_remote=is_remote,
+        experience_level=experience_level,
+        min_salary=min_salary,
+        is_active=True,
+    )
+    result = job_service.get_paginated(db, params=params, filters=filters)
+    return ok(data=result.model_dump()).model_dump()
+
+
 @router.post(
     "/ingest",
     summary="Batch ingest raw job postings",

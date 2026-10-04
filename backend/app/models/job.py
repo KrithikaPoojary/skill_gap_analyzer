@@ -28,9 +28,9 @@ class JobPosting(Base, TimestampMixin):
     is_remote: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     employment_type: Mapped[str] = mapped_column(
         String(50),
-        default="full-time",
+        default="full_time",
         nullable=False,
-    )  # full-time, part-time, contract, internship
+    )  # full_time, part_time, contract, internship
     experience_level: Mapped[str] = mapped_column(
         String(50),
         default="mid",
