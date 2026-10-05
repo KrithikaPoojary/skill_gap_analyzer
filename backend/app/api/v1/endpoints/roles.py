@@ -27,14 +27,27 @@ router = APIRouter(prefix="/roles", tags=["Target Roles & Career Paths"])
 )
 def list_target_roles(
     db: DbSession,
+    q: str | None = Query(None, description="Search term to filter roles by title or description"),
     category: str | None = Query(None, description="Filter by career category"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ) -> dict[str, Any]:
     """Retrieve list of industry target roles available for gap analysis."""
-    roles = role_repository.get_active_roles(db, category=category, skip=skip, limit=limit)
+    roles = role_repository.get_active_roles(db, category=category, query=q, skip=skip, limit=limit)
     items = [TargetRoleRead.model_validate(r).model_dump() for r in roles]
     return ok(data=items).model_dump()
+
+
+@router.get(
+    "/categories",
+    summary="List target role categories with role counts",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_role_categories(db: DbSession) -> dict[str, Any]:
+    """Retrieve all available career role categories with active role counts."""
+    categories = role_repository.get_categories(db)
+    return ok(data=categories).model_dump()
 
 
 @router.get(
@@ -50,6 +63,7 @@ def get_popular_target_roles(
     """Retrieve top target roles ranked by number of candidates actively tracking them."""
     popular = role_repository.get_popular_roles(db, limit=limit)
     return ok(data=popular).model_dump()
+
 
 
 @router.get(

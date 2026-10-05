@@ -26,15 +26,31 @@ class RoleRepository(BaseRepository[TargetRole]):
         db: Session,
         *,
         category: str | None = None,
+        query: str | None = None,
         skip: int = 0,
         limit: int = 100,
     ) -> list[TargetRole]:
-        """Fetch active target roles with optional category filtering."""
+        """Fetch active target roles with optional category and search filtering."""
         stmt = select(TargetRole).where(TargetRole.is_active.is_(True))
         if category:
             stmt = stmt.where(TargetRole.category == category)
-        stmt = stmt.offset(skip).limit(limit)
+        if query:
+            term = f"%{query}%"
+            stmt = stmt.where(TargetRole.title.ilike(term) | TargetRole.description.ilike(term))
+        stmt = stmt.order_by(TargetRole.title.asc()).offset(skip).limit(limit)
         return list(db.scalars(stmt).all())
+
+    def get_categories(self, db: Session) -> list[dict[str, Any]]:
+        """Return distinct career role categories with active role counts."""
+        from sqlalchemy import func
+        stmt = (
+            select(TargetRole.category, func.count(TargetRole.id))
+            .where(TargetRole.is_active.is_(True))
+            .group_by(TargetRole.category)
+            .order_by(func.count(TargetRole.id).desc(), TargetRole.category.asc())
+        )
+        rows = db.execute(stmt).all()
+        return [{"category": cat, "role_count": count} for cat, count in rows]
 
     def get_role_with_skills(self, db: Session, *, role_id: int) -> TargetRole | None:
         """Fetch target role with eager-loaded role skill weightings."""
