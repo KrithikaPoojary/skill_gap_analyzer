@@ -184,6 +184,21 @@ def remove_saved_job(
 
 
 @router.get(
+    "/saved/summary",
+    summary="Get candidate job bookmark and application tracking metrics summary",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_saved_jobs_summary(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Retrieve overall counts and breakdown by stage in candidate recruitment pipeline."""
+    stats = saved_job_repository.get_stats_by_user(db, user_id=current_user.id)
+    return ok(data=stats).model_dump()
+
+
+@router.get(
     "/saved",
     summary="List all bookmarked and tracked jobs for the authenticated user",
     status_code=status.HTTP_200_OK,

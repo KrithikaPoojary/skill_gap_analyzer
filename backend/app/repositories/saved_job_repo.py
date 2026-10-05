@@ -153,5 +153,31 @@ class SavedJobRepository:
             "status_breakdown": status_counts,
         }
 
+    def get_stats_by_user(
+        self,
+        db: Session,
+        *,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Aggregate application status metrics for a candidate's bookmarked jobs."""
+        stmt = (
+            select(UserSavedJob.status, func.count(UserSavedJob.id))
+            .where(UserSavedJob.user_id == user_id)
+            .group_by(UserSavedJob.status)
+        )
+        rows = db.execute(stmt).all()
+        status_counts = {str(status.value if hasattr(status, "value") else status): count for status, count in rows}
+        total_tracked = sum(status_counts.values())
+        return {
+            "total_tracked_jobs": total_tracked,
+            "saved": status_counts.get(ApplicationStatus.SAVED.value, 0),
+            "applied": status_counts.get(ApplicationStatus.APPLIED.value, 0),
+            "interviewing": status_counts.get(ApplicationStatus.INTERVIEWING.value, 0),
+            "offered": status_counts.get(ApplicationStatus.OFFERED.value, 0),
+            "rejected": status_counts.get(ApplicationStatus.REJECTED.value, 0),
+            "status_breakdown": status_counts,
+        }
+
 
 saved_job_repository = SavedJobRepository()
+
