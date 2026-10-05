@@ -84,6 +84,35 @@ def get_popular_skills(
 
 
 @router.get(
+    "/search",
+    summary="Search skills by name with autocomplete support",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def search_skills(
+    db: DbSession,
+    q: str = Query(..., min_length=1, max_length=100, description="Partial skill name for autocomplete"),
+    category: str | None = Query(None, description="Restrict search to a specific skill category"),
+    limit: int = Query(20, ge=1, le=100, description="Maximum results to return"),
+) -> dict[str, Any]:
+    """Autocomplete skill names based on a partial query string, with optional category filter."""
+    results = skill_repository.search(db, query=q, limit=limit)
+    if category:
+        results = [s for s in results if s.category == category]
+    return ok(
+        data=[
+            {
+                "id": s.id,
+                "name": s.name,
+                "normalized_name": s.normalized_name,
+                "category": s.category,
+            }
+            for s in results
+        ]
+    ).model_dump()
+
+
+@router.get(
     "/{skill_id}",
     summary="Get single skill by ID",
     status_code=status.HTTP_200_OK,
@@ -131,8 +160,6 @@ def get_skill_demand(
             detail=f"Skill with ID {skill_id} not found.",
         )
     return ok(data=metrics).model_dump()
-
-
 
 
 @router.post(
