@@ -271,6 +271,24 @@ def get_my_skill_gaps(
 
 
 @router.delete(
+    "/me/skills",
+    summary="Clear all skills from authenticated candidate profile",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def clear_my_skills(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Remove all claimed technical skills from the candidate's profile."""
+    count = user_skill_service.clear_user_skills(db, user_id=current_user.id)
+    return ok(
+        data={"cleared_count": count},
+        message=f"Removed {count} skills from your profile.",
+    ).model_dump()
+
+
+@router.delete(
     "/me/skills/{skill_id}",
     summary="Remove a skill from authenticated profile",
     status_code=status.HTTP_200_OK,

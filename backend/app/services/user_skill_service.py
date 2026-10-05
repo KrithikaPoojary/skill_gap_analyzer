@@ -6,7 +6,7 @@ user profiles via the UserSkill association entity.
 
 from __future__ import annotations
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.associations import UserSkill
@@ -115,6 +115,17 @@ class UserSkillService:
         db.delete(user_skill)
         db.commit()
         return True
+
+    def clear_user_skills(self, db: Session, *, user_id: int) -> int:
+        """Remove all skill associations for a user profile.
+
+        Returns:
+            Number of removed skill associations.
+        """
+        stmt = delete(UserSkill).where(UserSkill.user_id == user_id)
+        result = db.execute(stmt)
+        db.commit()
+        return result.rowcount or 0
 
     def update_user_skill(
         self,
