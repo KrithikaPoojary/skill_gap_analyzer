@@ -69,6 +69,21 @@ def browse_skill_catalog(
 
 
 @router.get(
+    "/popular",
+    summary="Get top skills ranked by candidate adoption",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_popular_skills(
+    db: DbSession,
+    limit: int = Query(10, ge=1, le=50, description="Max skills to return"),
+) -> dict[str, Any]:
+    """Retrieve skills ranked by how many candidates have added them to their profile."""
+    skills = skill_repository.get_popular_skills(db, limit=limit)
+    return ok(data=skills).model_dump()
+
+
+@router.get(
     "/{skill_id}",
     summary="Get single skill by ID",
     status_code=status.HTTP_200_OK,

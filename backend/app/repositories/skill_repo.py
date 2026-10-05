@@ -123,6 +123,34 @@ class SkillRepository(BaseRepository[Skill]):
             "candidates_count": candidate_count,
         }
 
+    def get_popular_skills(self, db: Session, *, limit: int = 10) -> list[dict]:
+        """Return skills ranked by candidate adoption count."""
+        from sqlalchemy import func
+        from app.models.associations import UserSkill
+
+        stmt = (
+            select(
+                Skill.id,
+                Skill.name,
+                Skill.category,
+                func.count(UserSkill.user_id).label("candidate_count"),
+            )
+            .outerjoin(UserSkill, Skill.id == UserSkill.skill_id)
+            .group_by(Skill.id)
+            .order_by(func.count(UserSkill.user_id).desc(), Skill.name.asc())
+            .limit(limit)
+        )
+        rows = db.execute(stmt).all()
+        return [
+            {
+                "id": r.id,
+                "name": r.name,
+                "category": r.category,
+                "candidate_count": r.candidate_count,
+            }
+            for r in rows
+        ]
+
 
 skill_repository = SkillRepository()
 
