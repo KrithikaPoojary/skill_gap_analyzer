@@ -1,7 +1,7 @@
 """User profile and candidate skills REST API endpoints."""
 
 from typing import Any
-from fastapi import APIRouter, Body, HTTPException, status
+from fastapi import APIRouter, Body, HTTPException, Query, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.schemas.profile import (
@@ -61,6 +61,43 @@ def update_my_profile(
         )
     profile_dict = ProfileData.model_validate(profile).model_dump()
     return ok(data=profile_dict, message="Profile updated successfully.").model_dump()
+
+
+@router.get(
+    "/me/skills",
+    summary="List authenticated candidate's claimed skills with optional filtering",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_skills(
+    current_user: CurrentUser,
+    db: DbSession,
+    category: str | None = Query(None, description="Filter by skill category"),
+    proficiency_level: str | None = Query(None, description="Filter by proficiency level"),
+    is_verified: bool | None = Query(None, description="Filter by verification status"),
+) -> dict[str, Any]:
+    """Retrieve all skills attached to candidate profile with optional filters."""
+    skills = user_skill_service.get_user_skills(db, user_id=current_user.id)
+    if category:
+        skills = [s for s in skills if s.skill and s.skill.category == category]
+    if proficiency_level:
+        skills = [s for s in skills if s.proficiency_level == proficiency_level]
+    if is_verified is not None:
+        skills = [s for s in skills if s.is_verified is is_verified]
+
+    items = [
+        {
+            "skill_id": us.skill_id,
+            "name": us.skill.name if us.skill else None,
+            "normalized_name": us.skill.normalized_name if us.skill else None,
+            "category": us.skill.category if us.skill else None,
+            "proficiency_level": us.proficiency_level,
+            "years_of_experience": us.years_of_experience,
+            "is_verified": us.is_verified,
+        }
+        for us in skills
+    ]
+    return ok(data={"total": len(items), "skills": items}).model_dump()
 
 
 @router.post(
