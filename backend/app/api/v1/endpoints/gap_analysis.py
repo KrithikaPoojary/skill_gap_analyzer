@@ -151,6 +151,21 @@ def get_my_gap_history(
 
 
 @router.get(
+    "/me/history/stats",
+    summary="Get aggregated statistics and readiness trend across user snapshots",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_gap_history_stats(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Calculate summary statistics over candidate gap analysis history including trend."""
+    stats = gap_snapshot_repository.get_user_snapshot_stats(db, user_id=current_user.id)
+    return ok(data=stats).model_dump()
+
+
+@router.get(
     "/me/snapshot/latest",
     summary="Get the most recent skill gap snapshot for the authenticated user",
     status_code=status.HTTP_200_OK,

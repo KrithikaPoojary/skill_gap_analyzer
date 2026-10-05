@@ -77,3 +77,43 @@ class TestGapSnapshotEndpoints:
             f"/api/v1/gap-analysis/me/history/{snapshot_id}", headers=headers
         )
         assert del_resp2.status_code == 404
+
+    def test_get_history_stats(self, client: TestClient) -> None:
+        user_id, token = self._register_and_get_token(client)
+        headers = {"Authorization": f"Bearer {token}"}
+
+        # Empty stats
+        empty_resp = client.get("/api/v1/gap-analysis/me/history/stats", headers=headers)
+        assert empty_resp.status_code == 200
+        assert empty_resp.json()["data"]["total_snapshots"] == 0
+        assert empty_resp.json()["data"]["score_trend"] == "neutral"
+
+        # Direct DB insert snapshots to verify aggregation and trend
+        from app.models.gap_snapshot import SkillGapSnapshot
+        with SessionLocal() as db:
+            s1 = SkillGapSnapshot(
+                user_id=user_id,
+                role_title="Backend Engineer",
+                readiness_score=40.0,
+                matched_skills=[],
+                missing_skills=[],
+            )
+            s2 = SkillGapSnapshot(
+                user_id=user_id,
+                role_title="Backend Engineer",
+                readiness_score=70.0,
+                matched_skills=[],
+                missing_skills=[],
+            )
+            db.add_all([s1, s2])
+            db.commit()
+
+        stats_resp = client.get("/api/v1/gap-analysis/me/history/stats", headers=headers)
+        assert stats_resp.status_code == 200
+        stats = stats_resp.json()["data"]
+        assert stats["total_snapshots"] == 2
+        assert stats["average_readiness_score"] == 55.0
+        assert stats["highest_readiness_score"] == 70.0
+        assert stats["lowest_readiness_score"] == 40.0
+        assert stats["latest_readiness_score"] == 70.0
+        assert stats["score_trend"] == "improving"

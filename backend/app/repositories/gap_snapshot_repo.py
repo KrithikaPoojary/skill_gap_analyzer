@@ -87,5 +87,52 @@ class SkillGapSnapshotRepository(BaseRepository[SkillGapSnapshot]):
         db.commit()
         return bool(res.rowcount and res.rowcount > 0)
 
+    def get_user_snapshot_stats(
+        self,
+        db: Session,
+        *,
+        user_id: int,
+    ) -> dict[str, Any]:
+        """Aggregate snapshot metrics: total snapshots, avg readiness score, best score, trend."""
+        stmt = (
+            select(SkillGapSnapshot)
+            .where(SkillGapSnapshot.user_id == user_id)
+            .order_by(SkillGapSnapshot.created_at.asc())
+        )
+        snapshots = list(db.scalars(stmt).all())
+        if not snapshots:
+            return {
+                "total_snapshots": 0,
+                "average_readiness_score": 0.0,
+                "highest_readiness_score": 0.0,
+                "lowest_readiness_score": 0.0,
+                "latest_readiness_score": 0.0,
+                "score_trend": "neutral",
+            }
+        scores = [s.readiness_score for s in snapshots]
+        avg_score = round(sum(scores) / len(scores), 2)
+        highest = max(scores)
+        lowest = min(scores)
+        latest = scores[-1]
+        first = scores[0]
+        if len(scores) > 1:
+            if latest > first:
+                trend = "improving"
+            elif latest < first:
+                trend = "declining"
+            else:
+                trend = "stable"
+        else:
+            trend = "stable"
+
+        return {
+            "total_snapshots": len(snapshots),
+            "average_readiness_score": avg_score,
+            "highest_readiness_score": highest,
+            "lowest_readiness_score": lowest,
+            "latest_readiness_score": latest,
+            "score_trend": trend,
+        }
+
 
 gap_snapshot_repository = SkillGapSnapshotRepository()
