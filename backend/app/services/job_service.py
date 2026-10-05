@@ -157,4 +157,37 @@ class JobService:
         return job
 
 
+    def get_by_company(
+        self,
+        db: Session,
+        *,
+        company_name: str,
+        skip: int = 0,
+        limit: int = 50,
+    ) -> list[JobPosting]:
+        """Fetch all active job postings from a specific company (case-insensitive)."""
+        stmt = (
+            select(JobPosting)
+            .where(
+                JobPosting.company_name.ilike(f"%{company_name}%"),
+                JobPosting.is_active.is_(True),
+            )
+            .order_by(JobPosting.created_at.desc())
+            .offset(skip)
+            .limit(limit)
+        )
+        return list(db.scalars(stmt).all())
+
+    def get_company_list(self, db: Session) -> list[dict[str, Any]]:
+        """Fetch distinct companies with their active job counts."""
+        stmt = (
+            select(JobPosting.company_name, func.count(JobPosting.id))
+            .where(JobPosting.is_active.is_(True))
+            .group_by(JobPosting.company_name)
+            .order_by(func.count(JobPosting.id).desc(), JobPosting.company_name.asc())
+        )
+        rows = db.execute(stmt).all()
+        return [{"company_name": name, "job_count": count} for name, count in rows]
+
+
 job_service = JobService()

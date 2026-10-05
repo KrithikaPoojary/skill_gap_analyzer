@@ -160,6 +160,34 @@ def get_ingestion_telemetry(
 
 
 @router.get(
+    "/companies",
+    summary="List distinct companies with active job counts",
+    response_model=dict,
+)
+def list_companies(db: DbSession) -> dict:
+    """Retrieve all companies that have active job postings with counts."""
+    companies = job_service.get_company_list(db)
+    return ok(data={"total": len(companies), "companies": companies}).model_dump()
+
+
+@router.get(
+    "/company/{company_name}",
+    summary="List active job postings from a specific company",
+    response_model=dict,
+)
+def get_jobs_by_company(
+    company_name: str,
+    db: DbSession,
+    skip: int = Query(0, ge=0, description="Pagination offset"),
+    limit: int = Query(50, ge=1, le=100, description="Page size limit"),
+) -> dict:
+    """Retrieve all active job postings matching the given company name (case-insensitive)."""
+    jobs = job_service.get_by_company(db, company_name=company_name, skip=skip, limit=limit)
+    items = [JobRead.model_validate(j).model_dump() for j in jobs]
+    return ok(data={"company_name": company_name, "total": len(items), "jobs": items}).model_dump()
+
+
+@router.get(
     "/{job_id}",
     summary="Retrieve a single job posting by ID",
     response_model=dict,
