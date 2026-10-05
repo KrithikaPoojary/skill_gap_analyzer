@@ -1,5 +1,4 @@
-"""Tests for job posting engagement statistics endpoint."""
-
+import uuid
 import pytest
 from starlette.testclient import TestClient
 
@@ -44,9 +43,10 @@ def test_get_job_stats_empty(client: TestClient) -> None:
 
 def test_get_job_stats_with_applications(client: TestClient) -> None:
     """Job with bookmarks and applications aggregates correctly."""
+    suffix = uuid.uuid4().hex[:6]
     with SessionLocal() as db:
-        u1 = User(email="applicant1@test.com", hashed_password="pw", full_name="User 1")
-        u2 = User(email="applicant2@test.com", hashed_password="pw", full_name="User 2")
+        u1 = User(email=f"applicant1_{suffix}@test.com", hashed_password="pw", full_name="User 1")
+        u2 = User(email=f"applicant2_{suffix}@test.com", hashed_password="pw", full_name="User 2")
         db.add_all([u1, u2])
         db.commit()
         db.refresh(u1)

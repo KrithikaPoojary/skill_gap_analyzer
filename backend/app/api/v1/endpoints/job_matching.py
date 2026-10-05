@@ -251,6 +251,31 @@ def list_saved_jobs(
     return ok(data=response_payload.model_dump()).model_dump()
 
 
+@router.delete(
+    "/saved/clear",
+    summary="Clear all bookmarked jobs for authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def clear_saved_jobs(
+    current_user: CurrentUser,
+    db: DbSession,
+    status_filter: str | None = Query(None, alias="status", description="Optional status filter"),
+) -> dict[str, Any]:
+    """Bulk remove bookmarked jobs, optionally filtered by application status."""
+    app_status = None
+    if status_filter:
+        try:
+            app_status = ApplicationStatus(status_filter.lower())
+        except ValueError:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Invalid status '{status_filter}'. Valid statuses: {[s.value for s in ApplicationStatus]}",
+            )
+    cleared = saved_job_repository.clear_by_user(db, user_id=current_user.id, status=app_status)
+    return ok(data={"cleared_count": cleared}, message=f"Removed {cleared} bookmarked jobs.").model_dump()
+
+
 @router.patch(
     "/{job_id}/status",
     summary="Update application tracking status for a bookmarked job",

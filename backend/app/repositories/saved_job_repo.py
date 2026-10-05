@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from typing import Sequence
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.job import JobPosting
@@ -177,6 +177,21 @@ class SavedJobRepository:
             "rejected": status_counts.get(ApplicationStatus.REJECTED.value, 0),
             "status_breakdown": status_counts,
         }
+
+    def clear_by_user(
+        self,
+        db: Session,
+        *,
+        user_id: int,
+        status: ApplicationStatus | None = None,
+    ) -> int:
+        """Remove bookmarked jobs for a user, optionally filtered by status."""
+        stmt = delete(UserSavedJob).where(UserSavedJob.user_id == user_id)
+        if status is not None:
+            stmt = stmt.where(UserSavedJob.status == status)
+        res = db.execute(stmt)
+        db.commit()
+        return res.rowcount or 0
 
 
 saved_job_repository = SavedJobRepository()
