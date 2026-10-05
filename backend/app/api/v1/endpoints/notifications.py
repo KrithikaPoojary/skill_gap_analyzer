@@ -16,10 +16,11 @@ def list_my_notifications(
     current_user: CurrentUser,
     db: DbSession,
     unread_only: bool = Query(False, description="Filter to unread only"),
+    category: str | None = Query(None, description="Filter by notification category"),
     limit: int = Query(50, ge=1, le=200),
 ) -> Any:
     items = notification_service.list_notifications(
-        db, user_id=current_user.id, unread_only=unread_only, limit=limit
+        db, user_id=current_user.id, unread_only=unread_only, category=category, limit=limit
     )
     return [
         {
@@ -41,6 +42,16 @@ def get_unread_count(
 ) -> Any:
     count = notification_service.get_unread_count(db, user_id=current_user.id)
     return {"unread_count": count}
+
+
+@router.get("/stats", summary="Get aggregated notification inbox metrics", response_model=dict)
+def get_notification_stats(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> Any:
+    """Retrieve counts for total, read, unread, and category breakdown."""
+    stats = notification_service.get_notification_stats(db, user_id=current_user.id)
+    return stats
 
 
 @router.patch("/{notification_id}/read", summary="Mark a notification as read", response_model=dict)
