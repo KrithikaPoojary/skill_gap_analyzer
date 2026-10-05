@@ -183,6 +183,50 @@ class RoadmapService:
             "is_completed": milestone.is_completed,
         }
 
+    def update_user_milestone_progress(
+        self,
+        db: Session,
+        *,
+        user_id: int,
+        roadmap_id: int,
+        milestone_id: int,
+        is_completed: bool,
+    ) -> dict[str, Any] | None:
+        """Update completion status of a milestone ensuring roadmap ownership."""
+        roadmap = self.repo.get_by_id_with_milestones(db, roadmap_id=roadmap_id)
+        if not roadmap or roadmap.user_id != user_id:
+            return None
+
+        # Verify milestone belongs to this roadmap
+        milestone = next((m for m in roadmap.milestones if m.id == milestone_id), None)
+        if not milestone:
+            return None
+
+        updated = self.repo.update_milestone_completion(
+            db, milestone_id=milestone_id, is_completed=is_completed
+        )
+        if not updated:
+            return None
+
+        # Calculate progress
+        total_milestones = len(roadmap.milestones)
+        completed_count = sum(
+            1 for m in roadmap.milestones
+            if (m.id == milestone_id and is_completed) or (m.id != milestone_id and m.is_completed)
+        )
+        progress_pct = round((completed_count / total_milestones) * 100.0, 1) if total_milestones > 0 else 0.0
+
+        return {
+            "milestone_id": updated.id,
+            "roadmap_id": roadmap.id,
+            "phase_number": updated.phase_number,
+            "phase_title": updated.phase_title,
+            "is_completed": updated.is_completed,
+            "roadmap_milestones_completed": completed_count,
+            "roadmap_milestones_total": total_milestones,
+            "roadmap_progress_percentage": progress_pct,
+        }
+
     def delete_user_roadmap(self, db: Session, *, user_id: int, roadmap_id: int) -> bool:
         """Delete roadmap belonging to user."""
         return self.repo.delete_user_roadmap(db, roadmap_id=roadmap_id, user_id=user_id)

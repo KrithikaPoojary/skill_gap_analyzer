@@ -170,6 +170,35 @@ def update_my_roadmap_status(
     return ok(data=updated, message=f"Roadmap status updated to {new_status}.").model_dump()
 
 
+@router.patch(
+    "/me/{roadmap_id}/milestones/{milestone_id}",
+    summary="Update candidate milestone completion progress with ownership validation",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def update_my_milestone_progress(
+    roadmap_id: int,
+    milestone_id: int,
+    payload: MilestoneProgressUpdateRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Mark a milestone as completed or pending for a roadmap owned by the authenticated candidate."""
+    result = roadmap_service.update_user_milestone_progress(
+        db,
+        user_id=current_user.id,
+        roadmap_id=roadmap_id,
+        milestone_id=milestone_id,
+        is_completed=payload.is_completed,
+    )
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Milestone {milestone_id} or roadmap {roadmap_id} not found on your profile.",
+        )
+    return ok(data=result, message="Milestone progress updated.").model_dump()
+
+
 @router.post(
     "/generate",
 
