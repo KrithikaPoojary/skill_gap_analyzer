@@ -160,5 +160,21 @@ class RecommendationService:
             "recommendations": recommendations,
         }
 
+    def get_quick_wins(
+        self,
+        db: Session,
+        *,
+        user_id: int,
+        max_missing_skills: int = 3,
+        limit: int = 5,
+    ) -> list[dict[str, Any]]:
+        """Identify target roles where candidate is missing only a few skills for rapid transition."""
+        all_recs = self.recommend_for_user(db, user_id=user_id, limit=20, min_score=0.0)
+        quick_wins = [
+            r for r in all_recs
+            if len(r["missing_skills"]) <= max_missing_skills and len(r["matched_skills"]) > 0
+        ]
+        return quick_wins[:limit]
+
 
 recommendation_service = RecommendationService()

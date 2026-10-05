@@ -85,6 +85,28 @@ def get_my_recommendations(
     return ok(data=response_data.model_dump()).model_dump()
 
 
+@router.get(
+    "/me/quick-wins",
+    summary="Get quick-win career roles with minimal skill deficits",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_quick_wins(
+    current_user: CurrentUser,
+    db: DbSession,
+    max_missing_skills: int = Query(3, ge=1, le=10, description="Max missing skills"),
+    limit: int = Query(5, ge=1, le=20, description="Max roles to return"),
+) -> dict[str, Any]:
+    """Identify fast career pivots where candidate needs to learn only a few skills."""
+    quick_wins = recommendation_service.get_quick_wins(
+        db,
+        user_id=current_user.id,
+        max_missing_skills=max_missing_skills,
+        limit=limit,
+    )
+    return ok(data={"total": len(quick_wins), "quick_wins": quick_wins}).model_dump()
+
+
 @router.post(
     "/from-skills",
     summary="Generate role recommendations from an explicit list of skills",
