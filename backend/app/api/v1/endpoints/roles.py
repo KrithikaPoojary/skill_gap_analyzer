@@ -158,6 +158,36 @@ def get_role_skills(role_id: int, db: DbSession) -> dict[str, Any]:
 
 
 @router.get(
+    "/{role_id}/similar",
+    summary="Get similar target roles in the same category",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_similar_roles(
+    role_id: int,
+    db: DbSession,
+    limit: int = Query(5, ge=1, le=20, description="Max similar roles to return"),
+) -> dict[str, Any]:
+    """Retrieve other active roles within the same career category."""
+    role = role_repository.get(db, role_id)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Target role with ID {role_id} not found.",
+        )
+    similar = role_repository.get_similar_roles(db, role_id=role_id, limit=limit)
+    items = [TargetRoleRead.model_validate(r).model_dump() for r in similar]
+    return ok(
+        data={
+            "role_id": role.id,
+            "role_title": role.title,
+            "category": role.category,
+            "similar_roles": items,
+        }
+    ).model_dump()
+
+
+@router.get(
     "/me/targets",
     summary="List authenticated user's tracked target roles",
     status_code=status.HTTP_200_OK,

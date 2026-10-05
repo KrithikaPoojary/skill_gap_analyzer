@@ -163,5 +163,28 @@ class RoleRepository(BaseRepository[TargetRole]):
             for r in rows
         ]
 
+    def get_similar_roles(
+        self,
+        db: Session,
+        *,
+        role_id: int,
+        limit: int = 5,
+    ) -> list[TargetRole]:
+        """Find roles in the same category, excluding the specified role."""
+        target = self.get(db, role_id)
+        if not target:
+            return []
+        stmt = (
+            select(TargetRole)
+            .where(
+                TargetRole.category == target.category,
+                TargetRole.id != role_id,
+                TargetRole.is_active.is_(True),
+            )
+            .order_by(TargetRole.title.asc())
+            .limit(limit)
+        )
+        return list(db.scalars(stmt).all())
+
 
 role_repository = RoleRepository()
