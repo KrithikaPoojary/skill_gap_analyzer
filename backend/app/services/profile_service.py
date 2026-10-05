@@ -279,6 +279,48 @@ class ProfileService:
         }
 
 
+    def get_profile_completeness(self, db: Session, *, user_id: int) -> dict[str, Any]:
+        """Compute a profile completeness score with a checklist of filled and missing fields.
+
+        Returns:
+            Dict with completeness_pct, filled_fields, missing_fields, and total_fields.
+        """
+        user = db.get(User, user_id)
+        profile = self.get_by_user_id(db, user_id)
+
+        # Skills count
+        skill_stmt = select(UserSkill).where(UserSkill.user_id == user_id)
+        skill_count = len(list(db.scalars(skill_stmt).all()))
+
+        # Target roles count
+        role_stmt = select(UserTargetRole).where(UserTargetRole.user_id == user_id)
+        role_count = len(list(db.scalars(role_stmt).all()))
+
+        checklist = {
+            "full_name": bool(user and user.full_name),
+            "headline": bool(profile and profile.headline),
+            "bio": bool(profile and profile.bio),
+            "current_title": bool(profile and profile.current_title),
+            "location": bool(profile and profile.location),
+            "years_of_experience": bool(profile and profile.years_of_experience and profile.years_of_experience > 0),
+            "github_url": bool(profile and profile.github_url),
+            "linkedin_url": bool(profile and profile.linkedin_url),
+            "resume_url": bool(profile and profile.resume_url),
+            "has_skills": skill_count > 0,
+            "has_target_roles": role_count > 0,
+        }
+        total = len(checklist)
+        filled = sum(1 for v in checklist.values() if v)
+        completeness_pct = round((filled / total) * 100, 1) if total else 0.0
+
+        return {
+            "completeness_pct": completeness_pct,
+            "filled_fields": filled,
+            "total_fields": total,
+            "checklist": checklist,
+        }
+
+
 profile_service = ProfileService()
 
 

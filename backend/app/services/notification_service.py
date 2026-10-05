@@ -135,3 +135,19 @@ def get_unread_count(db: Session, *, user_id: int) -> int:
     )
 
 
+def mark_bulk_read(db: Session, *, user_id: int, notification_ids: list[int]) -> int:
+    """Mark a specific list of notification IDs as read for a user.
+
+    Returns the count of notifications updated.
+    """
+    count = (
+        db.query(Notification)
+        .filter(
+            Notification.user_id == user_id,
+            Notification.id.in_(notification_ids),
+            Notification.is_read.is_(False),
+        )
+        .update({"is_read": True}, synchronize_session="fetch")
+    )
+    db.commit()
+    return count

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query, Response, status
+from fastapi import APIRouter, Body, HTTPException, Query, Response, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.services import notification_service
@@ -71,6 +71,19 @@ def mark_notification_read(
 @router.patch("/read-all", summary="Mark all notifications as read", response_model=dict)
 def mark_all_notifications_read(current_user: CurrentUser, db: DbSession) -> Any:
     count = notification_service.mark_all_read(db, user_id=current_user.id)
+    return {"marked_read": count}
+
+
+@router.patch("/bulk-read", summary="Mark multiple notifications as read by ID list", response_model=dict)
+def mark_notifications_bulk_read(
+    current_user: CurrentUser,
+    db: DbSession,
+    notification_ids: list[int] = Body(..., embed=True, description="List of notification IDs to mark as read"),
+) -> Any:
+    """Mark a specific list of notifications as read in a single operation."""
+    if not notification_ids:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="notification_ids list cannot be empty")
+    count = notification_service.mark_bulk_read(db, user_id=current_user.id, notification_ids=notification_ids)
     return {"marked_read": count}
 
 

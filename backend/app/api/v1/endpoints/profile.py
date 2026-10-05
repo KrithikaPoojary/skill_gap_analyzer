@@ -100,6 +100,53 @@ def get_my_skills(
     return ok(data={"total": len(items), "skills": items}).model_dump()
 
 
+@router.get(
+    "/me/skills/{skill_id}",
+    summary="Get details of a specific skill on the authenticated user's profile",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_skill_by_id(
+    skill_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Retrieve a single skill entry from the current user's profile by skill ID."""
+    skills = user_skill_service.get_user_skills(db, user_id=current_user.id)
+    match = next((us for us in skills if us.skill_id == skill_id), None)
+    if not match:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Skill {skill_id} not found on your profile.",
+        )
+    return ok(
+        data={
+            "skill_id": match.skill_id,
+            "name": match.skill.name if match.skill else None,
+            "normalized_name": match.skill.normalized_name if match.skill else None,
+            "category": match.skill.category if match.skill else None,
+            "proficiency_level": match.proficiency_level,
+            "years_of_experience": match.years_of_experience,
+            "is_verified": match.is_verified,
+        }
+    ).model_dump()
+
+
+@router.get(
+    "/me/completeness",
+    summary="Get profile completeness score with field checklist",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_profile_completeness(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Return profile completeness percentage with a checklist of filled and missing fields."""
+    result = profile_service.get_profile_completeness(db, user_id=current_user.id)
+    return ok(data=result).model_dump()
+
+
 @router.post(
     "/me/skills",
     summary="Add or update a skill on authenticated profile",
