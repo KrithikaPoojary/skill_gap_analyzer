@@ -3,7 +3,7 @@
 from typing import Any
 from fastapi import APIRouter, HTTPException, Query, status
 
-from app.api.deps import DbSession
+from app.api.deps import CurrentUser, DbSession
 from app.schemas.recommendations import (
     RecommendationsForSkillsRequest,
     RecommendationsForTextRequest,
@@ -35,6 +35,40 @@ def get_user_recommendations(
         recs = recommendation_service.recommend_for_user(
             db,
             user_id=user_id,
+            limit=limit,
+            min_score=min_score,
+            category=category,
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(e),
+        )
+
+    response_data = RecommendationsResponse(
+        recommendations=[RoleRecommendationItem(**r) for r in recs]
+    )
+    return ok(data=response_data.model_dump()).model_dump()
+
+
+@router.get(
+    "/me",
+    summary="Get personalized career role recommendations for the authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_recommendations(
+    current_user: CurrentUser,
+    db: DbSession,
+    limit: int = Query(5, ge=1, le=50, description="Max recommendations to return"),
+    min_score: float = Query(0.0, ge=0.0, le=1.0, description="Minimum fit score filter"),
+    category: str | None = Query(None, description="Role category filter"),
+) -> dict[str, Any]:
+    """Rank target career roles for the authenticated user based on their claimed skill profile."""
+    try:
+        recs = recommendation_service.recommend_for_user(
+            db,
+            user_id=current_user.id,
             limit=limit,
             min_score=min_score,
             category=category,

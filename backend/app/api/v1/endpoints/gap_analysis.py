@@ -150,6 +150,29 @@ def get_my_gap_history(
     return ok(data=items).model_dump()
 
 
+@router.get(
+    "/me/snapshot/latest",
+    summary="Get the most recent skill gap snapshot for the authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_latest_snapshot(
+    current_user: CurrentUser,
+    db: DbSession,
+    role_id: int | None = Query(None, description="Filter latest snapshot by role ID"),
+) -> dict[str, Any]:
+    """Retrieve the most recent skill gap assessment snapshot for the current user."""
+    snapshot = gap_snapshot_repository.get_latest_snapshot(
+        db, user_id=current_user.id, role_id=role_id
+    )
+    if not snapshot:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No gap analysis snapshot found for this user.",
+        )
+    return ok(data=GapSnapshotRead.model_validate(snapshot).model_dump()).model_dump()
+
+
 @router.post(
     "/me/snapshot",
     summary="Compute and persist a skill gap snapshot for candidate history",
