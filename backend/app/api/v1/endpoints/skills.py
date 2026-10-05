@@ -97,6 +97,28 @@ def get_skill(
     ).model_dump()
 
 
+@router.get(
+    "/{skill_id}/demand",
+    summary="Get market demand metrics for a specific skill",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_skill_demand(
+    skill_id: int,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Retrieve market demand metrics including active job postings, target roles, and candidate counts."""
+    from fastapi import HTTPException
+    metrics = skill_repository.get_skill_demand_metrics(db, skill_id=skill_id)
+    if not metrics:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Skill with ID {skill_id} not found.",
+        )
+    return ok(data=metrics).model_dump()
+
+
+
 
 @router.post(
     "/extract",
