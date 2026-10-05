@@ -295,3 +295,65 @@ def compare_my_roles(
     return ok(data=result).model_dump()
 
 
+@router.get(
+    "/me/readiness",
+    summary="Get readiness scores across all active target roles for the authenticated user",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_readiness_dashboard(
+    current_user: CurrentUser,
+    db: DbSession,
+    limit: int = Query(10, ge=1, le=50, description="Max roles to evaluate"),
+) -> dict[str, Any]:
+    """Evaluate authenticated user's skill profile against all active target roles and rank by readiness."""
+    from sqlalchemy import select
+    from sqlalchemy.orm import joinedload
+    from app.models.role import RoleSkillWeighting, TargetRole
+    from app.services.skill_gap_analyzer import SkillWeight
+    from app.services.user_skill_service import user_skill_service
+
+    claimed_skills = user_skill_service.get_user_skill_names(db, user_id=current_user.id)
+
+    stmt = (
+        select(TargetRole)
+        .where(TargetRole.is_active.is_(True))
+        .options(joinedload(TargetRole.role_skills).joinedload(RoleSkillWeighting.skill))
+    )
+    roles = list(db.scalars(stmt).unique().all())
+
+    readiness_entries = []
+    for role in roles:
+        required_weights = [
+            SkillWeight(name=rw.skill.name, weight=rw.weight)
+            for rw in role.role_skills
+            if rw.skill
+        ]
+        if not required_weights:
+            continue
+        report = gap_analysis_service.analyzer.analyse(
+            profile_skills=claimed_skills,
+            required_skills=required_weights,
+            role_name=role.title,
+        )
+        readiness_entries.append({
+            "role_id": role.id,
+            "title": role.title,
+            "slug": role.slug,
+            "category": role.category,
+            "readiness_score": round(report.coverage_pct, 2),
+            "match_score": round(report.weighted_gap_score, 3),
+            "missing_count": len(report.missing_skills),
+            "missing_critical": report.missing_critical,
+        })
+
+    readiness_entries.sort(key=lambda r: r["readiness_score"], reverse=True)
+    top = readiness_entries[:limit]
+
+    return ok(
+        data={
+            "user_id": current_user.id,
+            "total_roles_evaluated": len(readiness_entries),
+            "roles": top,
+        }
+    ).model_dump()
