@@ -107,6 +107,50 @@ def get_my_quick_wins(
     return ok(data={"total": len(quick_wins), "quick_wins": quick_wins}).model_dump()
 
 
+@router.get(
+    "/me/learning-path",
+    summary="Get a prioritized learning path based on missing skills across top role recommendations",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_learning_path(
+    current_user: CurrentUser,
+    db: DbSession,
+    limit_roles: int = Query(5, ge=1, le=20, description="Number of top roles to aggregate missing skills from"),
+    limit_skills: int = Query(10, ge=1, le=50, description="Max skills in learning path"),
+) -> dict[str, Any]:
+    """Aggregate missing skills across top recommended roles and rank by importance for focused upskilling."""
+    recs = recommendation_service.recommend_for_user(
+        db, user_id=current_user.id, limit=limit_roles, min_score=0.0
+    )
+
+    # Aggregate missing skill weights across roles
+    skill_weights: dict[str, float] = {}
+    skill_roles: dict[str, list[str]] = {}
+    for rec in recs:
+        for ms in rec["missing_skills"]:
+            name = ms["name"]
+            skill_weights[name] = skill_weights.get(name, 0.0) + ms["weight"]
+            skill_roles.setdefault(name, []).append(rec["title"])
+
+    sorted_skills = sorted(skill_weights.items(), key=lambda x: x[1], reverse=True)
+    learning_path = [
+        {
+            "skill": name,
+            "priority_score": round(weight, 3),
+            "needed_for_roles": skill_roles[name],
+        }
+        for name, weight in sorted_skills[:limit_skills]
+    ]
+
+    return ok(
+        data={
+            "total_skills": len(learning_path),
+            "learning_path": learning_path,
+        }
+    ).model_dump()
+
+
 @router.post(
     "/from-skills",
     summary="Generate role recommendations from an explicit list of skills",
