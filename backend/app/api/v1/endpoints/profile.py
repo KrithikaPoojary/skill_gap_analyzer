@@ -511,3 +511,47 @@ def change_my_password(
     current_user.hashed_password = hash_password(new_password)
     db.commit()
     return ok(data={"message": "Password updated successfully."}).model_dump()
+
+
+@router.get(
+    "/me/skill-stats",
+    summary="Get proficiency and category distribution for authenticated user's skills",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_skill_stats(current_user: CurrentUser, db: DbSession) -> dict[str, Any]:
+    """Return aggregated skill stats: counts by proficiency level and category breakdown."""
+    from sqlalchemy import func, select
+    from app.models.associations import UserSkill
+    from app.models.skill import Skill
+
+    rows = (
+        db.execute(
+            select(
+                Skill.category,
+                UserSkill.proficiency_level,
+                func.count(UserSkill.skill_id).label("count"),
+            )
+            .join(Skill, Skill.id == UserSkill.skill_id)
+            .where(UserSkill.user_id == current_user.id)
+            .group_by(Skill.category, UserSkill.proficiency_level)
+        )
+        .all()
+    )
+
+    total = sum(r.count for r in rows)
+    by_proficiency: dict[str, int] = {}
+    by_category: dict[str, int] = {}
+    for r in rows:
+        prof = r.proficiency_level or "unknown"
+        cat = r.category or "other"
+        by_proficiency[prof] = by_proficiency.get(prof, 0) + r.count
+        by_category[cat] = by_category.get(cat, 0) + r.count
+
+    return ok(
+        data={
+            "total_skills": total,
+            "by_proficiency": by_proficiency,
+            "by_category": by_category,
+        }
+    ).model_dump()
