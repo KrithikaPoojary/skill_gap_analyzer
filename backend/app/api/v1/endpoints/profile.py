@@ -116,6 +116,57 @@ def get_my_skill_gaps(
 
 
 @router.get(
+    "/me/skills/verification-summary",
+    summary="Get verification breakdown of candidate profile skills",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_skill_verification_summary(current_user: CurrentUser, db: DbSession) -> dict[str, Any]:
+    """Retrieve breakdown of candidate's verified versus unverified technical skills."""
+    from sqlalchemy import select
+    from app.models.associations import UserSkill
+    from app.models.skill import Skill
+
+    user_skills = db.execute(
+        select(UserSkill, Skill)
+        .join(Skill, Skill.id == UserSkill.skill_id)
+        .where(UserSkill.user_id == current_user.id)
+    ).all()
+
+    verified = []
+    unverified = []
+
+    for us, skill in user_skills:
+        item = {
+            "skill_id": us.skill_id,
+            "skill_name": skill.name,
+            "category": skill.category,
+            "proficiency_level": us.proficiency_level,
+            "years_of_experience": us.years_of_experience,
+            "is_verified": us.is_verified,
+        }
+        if us.is_verified:
+            verified.append(item)
+        else:
+            unverified.append(item)
+
+    total = len(verified) + len(unverified)
+    pct = round(len(verified) / total * 100, 1) if total else 0.0
+
+    return ok(
+        data={
+            "total_skills": total,
+            "verified_count": len(verified),
+            "unverified_count": len(unverified),
+            "verification_rate_pct": pct,
+            "verified_skills": verified,
+            "unverified_skills": unverified,
+        }
+    ).model_dump()
+
+
+@router.get(
+
     "/me/skills/{skill_id}",
     summary="Get details of a specific skill on the authenticated user's profile",
     status_code=status.HTTP_200_OK,
@@ -558,6 +609,8 @@ def get_my_skill_stats(current_user: CurrentUser, db: DbSession) -> dict[str, An
 
 
 @router.get(
+
+
     "/me/export",
     summary="Export candidate complete profile, skills, and target roles data",
     status_code=status.HTTP_200_OK,
