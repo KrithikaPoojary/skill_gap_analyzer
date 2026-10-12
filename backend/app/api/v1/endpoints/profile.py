@@ -101,6 +101,21 @@ def get_my_skills(
 
 
 @router.get(
+    "/me/skills/gaps",
+    summary="Get aggregated missing skill gaps across all tracked target roles",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_my_skill_gaps(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Identify missing skills preventing the candidate from achieving benchmark readiness across target roles."""
+    result = profile_service.get_user_skill_gaps(db, user_id=current_user.id)
+    return ok(data=result).model_dump()
+
+
+@router.get(
     "/me/skills/{skill_id}",
     summary="Get details of a specific skill on the authenticated user's profile",
     status_code=status.HTTP_200_OK,

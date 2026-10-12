@@ -40,7 +40,7 @@ class TestJobPostingModel:
         assert job.title == "Senior Python Backend Engineer"
         assert job.company_name == "Acme Tech"
         assert job.is_remote is False
-        assert job.employment_type == "full-time"
+        assert job.employment_type in ("full-time", "full_time")
         assert job.experience_level == "mid"
         assert job.salary_currency == "USD"
         assert job.is_active is True

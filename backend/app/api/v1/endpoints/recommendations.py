@@ -116,7 +116,7 @@ def get_my_quick_wins(
 def get_my_learning_path(
     current_user: CurrentUser,
     db: DbSession,
-    limit_roles: int = Query(5, ge=1, le=20, description="Number of top roles to aggregate missing skills from"),
+    limit_roles: int = Query(20, ge=1, le=50, description="Number of top roles to aggregate missing skills from"),
     limit_skills: int = Query(10, ge=1, le=50, description="Max skills in learning path"),
 ) -> dict[str, Any]:
     """Aggregate missing skills across top recommended roles and rank by importance for focused upskilling."""

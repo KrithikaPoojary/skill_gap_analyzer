@@ -74,6 +74,8 @@ class RecommendationService:
                 for rw in role.role_skills
                 if rw.skill
             ]
+            if not required_weights:
+                continue
 
             report: GapReport = self.analyzer.analyse(
                 profile_skills=skills,
