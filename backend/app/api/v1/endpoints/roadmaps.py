@@ -125,6 +125,51 @@ def get_my_roadmap_details(
     return ok(data=roadmap).model_dump()
 
 
+@router.get(
+    "/me/{roadmap_id}/export",
+    summary="Export candidate roadmap as structured learning plan curriculum JSON",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def export_my_roadmap(
+    roadmap_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Generate exportable structured curriculum with milestones, estimated duration, and resources."""
+    from datetime import datetime, timezone
+
+    roadmap = roadmap_service.get_user_roadmap_by_id(db, user_id=current_user.id, roadmap_id=roadmap_id)
+    if not roadmap:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Roadmap with ID {roadmap_id} not found on your profile.",
+        )
+
+    milestones = roadmap.get("milestones") or []
+    completed = [m for m in milestones if m.get("is_completed")]
+
+    export_data = {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "candidate": {
+            "id": current_user.id,
+            "email": current_user.email,
+            "full_name": current_user.full_name,
+        },
+        "roadmap_id": roadmap.get("id"),
+        "role_title": roadmap.get("role_title") or roadmap.get("role_name"),
+        "status": roadmap.get("status"),
+        "weekly_commitment_hours": roadmap.get("weekly_commitment_hours"),
+        "total_milestones": len(milestones),
+        "completed_milestones": len(completed),
+        "completion_rate_pct": round(len(completed) / len(milestones) * 100, 1) if milestones else 0.0,
+        "curriculum": milestones,
+    }
+
+    return ok(data=export_data, message="Roadmap curriculum exported successfully.").model_dump()
+
+
+
 @router.delete(
     "/me/{roadmap_id}",
     summary="Delete a saved roadmap belonging to authenticated user",
