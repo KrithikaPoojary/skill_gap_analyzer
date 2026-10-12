@@ -414,3 +414,62 @@ def get_role_skill_overlap(
         }
     ).model_dump()
 
+
+@router.get(
+    "/{role_id}/transitions",
+    summary="Career transition recommendations based on skill transferability",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_role_transitions(
+    role_id: int,
+    db: DbSession,
+    limit: int = Query(5, ge=1, le=20, description="Max transition paths to recommend"),
+) -> dict[str, Any]:
+    """Identify target roles with high skill transferability from the given role."""
+    from app.models.role import TargetRole
+
+    source_role = role_repository.get_role_with_skills(db, role_id=role_id)
+    if not source_role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Target role with ID {role_id} not found.",
+        )
+
+    source_skill_ids = {rw.skill_id for rw in source_role.role_skills}
+    other_roles = db.query(TargetRole).filter(TargetRole.id != role_id, TargetRole.is_active.is_(True)).all()
+
+    recommendations = []
+    for other in other_roles:
+        other_detail = role_repository.get_role_with_skills(db, role_id=other.id)
+        if not other_detail or not other_detail.role_skills:
+            continue
+        other_skill_ids = {rw.skill_id for rw in other_detail.role_skills}
+        shared = source_skill_ids & other_skill_ids
+        if not shared:
+            continue
+        transferability_pct = round(len(shared) / len(other_skill_ids) * 100, 1)
+        recommendations.append(
+            {
+                "role_id": other.id,
+                "title": other.title,
+                "category": other.category,
+                "min_experience_years": other.min_experience_years,
+                "shared_skills_count": len(shared),
+                "total_target_skills": len(other_skill_ids),
+                "transferability_pct": transferability_pct,
+            }
+        )
+
+    recommendations.sort(key=lambda x: (x["transferability_pct"], x["shared_skills_count"]), reverse=True)
+    recommendations = recommendations[:limit]
+
+    return ok(
+        data={
+            "source_role": {"id": source_role.id, "title": source_role.title, "total_skills": len(source_skill_ids)},
+            "total_recommendations": len(recommendations),
+            "transitions": recommendations,
+        }
+    ).model_dump()
+
+
