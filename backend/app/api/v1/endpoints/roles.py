@@ -64,6 +64,35 @@ def get_popular_target_roles(
     popular = role_repository.get_popular_roles(db, limit=limit)
     return ok(data=popular).model_dump()
 
+@router.get(
+    "/by-experience",
+    summary="Filter active target roles by required experience range",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_roles_by_experience(
+    db: DbSession,
+    min_exp: int | None = Query(None, ge=0, description="Minimum years of experience required"),
+    max_exp: int | None = Query(None, ge=0, description="Maximum years of experience required"),
+    category: str | None = Query(None, description="Optional career category filter"),
+    limit: int = Query(20, ge=1, le=100, description="Max roles to return"),
+) -> dict[str, Any]:
+    """Retrieve active target roles filtered by the experience range the candidate has."""
+    from sqlalchemy import select
+    from app.models.role import TargetRole
+
+    stmt = select(TargetRole).where(TargetRole.is_active.is_(True))
+    if min_exp is not None:
+        stmt = stmt.where(TargetRole.min_experience_years >= min_exp)
+    if max_exp is not None:
+        stmt = stmt.where(TargetRole.min_experience_years <= max_exp)
+    if category:
+        stmt = stmt.where(TargetRole.category == category)
+    stmt = stmt.order_by(TargetRole.min_experience_years.asc()).limit(limit)
+
+    roles = list(db.scalars(stmt).all())
+    items = [TargetRoleRead.model_validate(r).model_dump() for r in roles]
+    return ok(data={"total": len(items), "roles": items}).model_dump()
 
 
 @router.get(
