@@ -324,3 +324,93 @@ def remove_my_target_role(
             detail=f"Target role with ID {role_id} is not tracked by user.",
         )
     return ok(data={"role_id": role_id}, message="Target role untracked successfully.").model_dump()
+
+
+@router.get(
+    "/{role_id}/overlap/{target_role_id}",
+    summary="Compare skill requirements and overlap between two target roles",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_role_skill_overlap(
+    role_id: int,
+    target_role_id: int,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Calculate shared vs distinct skills between two roles with similarity percentage."""
+    role1 = role_repository.get_role_with_skills(db, role_id=role_id)
+    if not role1:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Source target role with ID {role_id} not found.",
+        )
+
+    role2 = role_repository.get_role_with_skills(db, role_id=target_role_id)
+    if not role2:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Comparison target role with ID {target_role_id} not found.",
+        )
+
+    s1_map = {rw.skill_id: rw for rw in role1.role_skills}
+    s2_map = {rw.skill_id: rw for rw in role2.role_skills}
+
+    s1_keys = set(s1_map.keys())
+    s2_keys = set(s2_map.keys())
+
+    shared_keys = s1_keys & s2_keys
+    only_s1_keys = s1_keys - s2_keys
+    only_s2_keys = s2_keys - s1_keys
+    union_keys = s1_keys | s2_keys
+
+    overlap_pct = round(len(shared_keys) / len(union_keys) * 100, 1) if union_keys else 0.0
+
+    shared_skills = [
+        {
+            "skill_id": sid,
+            "skill_name": s1_map[sid].skill.name if s1_map[sid].skill else None,
+            "category": s1_map[sid].skill.category if s1_map[sid].skill else None,
+            "role1_is_core": s1_map[sid].is_core,
+            "role2_is_core": s2_map[sid].is_core,
+            "role1_weight": s1_map[sid].weight,
+            "role2_weight": s2_map[sid].weight,
+        }
+        for sid in sorted(shared_keys)
+    ]
+
+    role1_unique = [
+        {
+            "skill_id": sid,
+            "skill_name": s1_map[sid].skill.name if s1_map[sid].skill else None,
+            "category": s1_map[sid].skill.category if s1_map[sid].skill else None,
+            "is_core": s1_map[sid].is_core,
+            "weight": s1_map[sid].weight,
+        }
+        for sid in sorted(only_s1_keys)
+    ]
+
+    role2_unique = [
+        {
+            "skill_id": sid,
+            "skill_name": s2_map[sid].skill.name if s2_map[sid].skill else None,
+            "category": s2_map[sid].skill.category if s2_map[sid].skill else None,
+            "is_core": s2_map[sid].is_core,
+            "weight": s2_map[sid].weight,
+        }
+        for sid in sorted(only_s2_keys)
+    ]
+
+    return ok(
+        data={
+            "role1": {"id": role1.id, "title": role1.title, "total_skills": len(s1_keys)},
+            "role2": {"id": role2.id, "title": role2.title, "total_skills": len(s2_keys)},
+            "overlap_percentage": overlap_pct,
+            "shared_count": len(shared_keys),
+            "role1_unique_count": len(only_s1_keys),
+            "role2_unique_count": len(only_s2_keys),
+            "shared_skills": shared_skills,
+            "role1_unique_skills": role1_unique,
+            "role2_unique_skills": role2_unique,
+        }
+    ).model_dump()
+
