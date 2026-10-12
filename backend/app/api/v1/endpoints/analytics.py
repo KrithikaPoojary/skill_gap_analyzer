@@ -285,3 +285,75 @@ def get_salary_bands(
     ).model_dump()
 
 
+@router.get(
+    "/jobs/remote-breakdown",
+    summary="Remote vs on-site job market breakdown",
+    response_model=dict,
+)
+def get_remote_work_breakdown(db: DbSession) -> dict[str, Any]:
+    """Retrieve detailed breakdown of remote vs onsite jobs across experience levels and employment types."""
+    from sqlalchemy import case, func, select
+    from app.models.job import JobPosting
+
+    total_active = db.scalar(
+        select(func.count(JobPosting.id)).where(JobPosting.is_active.is_(True))
+    ) or 0
+    total_remote = db.scalar(
+        select(func.count(JobPosting.id)).where(JobPosting.is_active.is_(True), JobPosting.is_remote.is_(True))
+    ) or 0
+    total_onsite = total_active - total_remote
+    overall_pct = round(total_remote / total_active * 100, 1) if total_active else 0.0
+
+    exp_rows = db.execute(
+        select(
+            JobPosting.experience_level,
+            func.count(JobPosting.id).label("total"),
+            func.sum(case((JobPosting.is_remote.is_(True), 1), else_=0)).label("remote"),
+        )
+        .where(JobPosting.is_active.is_(True))
+        .group_by(JobPosting.experience_level)
+    ).all()
+
+    by_experience = [
+        {
+            "experience_level": r.experience_level,
+            "total_jobs": r.total,
+            "remote_jobs": int(r.remote or 0),
+            "remote_percentage": round(float(r.remote or 0) / r.total * 100, 1) if r.total else 0.0,
+        }
+        for r in exp_rows
+    ]
+
+    type_rows = db.execute(
+        select(
+            JobPosting.employment_type,
+            func.count(JobPosting.id).label("total"),
+            func.sum(case((JobPosting.is_remote.is_(True), 1), else_=0)).label("remote"),
+        )
+        .where(JobPosting.is_active.is_(True))
+        .group_by(JobPosting.employment_type)
+    ).all()
+
+    by_employment_type = [
+        {
+            "employment_type": r.employment_type,
+            "total_jobs": r.total,
+            "remote_jobs": int(r.remote or 0),
+            "remote_percentage": round(float(r.remote or 0) / r.total * 100, 1) if r.total else 0.0,
+        }
+        for r in type_rows
+    ]
+
+    return ok(
+        data={
+            "total_active_jobs": total_active,
+            "total_remote": total_remote,
+            "total_onsite": total_onsite,
+            "overall_remote_percentage": overall_pct,
+            "by_experience_level": by_experience,
+            "by_employment_type": by_employment_type,
+        }
+    ).model_dump()
+
+
+
