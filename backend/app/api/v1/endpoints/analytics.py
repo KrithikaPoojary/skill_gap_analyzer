@@ -110,3 +110,73 @@ def get_geo_analytics(
     """Retrieve top hiring hubs and remote eligibility metrics."""
     data = analytics_service.get_geo_analysis(db, limit=limit)
     return ok(data=data).model_dump()
+
+
+@router.get(
+    "/jobs/by-location",
+    summary="Job posting distribution by location",
+    response_model=dict,
+)
+def get_jobs_by_location(
+    db: DbSession,
+    limit: int = Query(20, ge=1, le=100, description="Max locations to return"),
+) -> dict[str, Any]:
+    """Return job posting counts grouped by location."""
+    from sqlalchemy import select, func
+    from app.models.job import JobPosting
+
+    rows = db.execute(
+        select(
+            JobPosting.location,
+            func.count(JobPosting.id).label("count"),
+        )
+        .where(JobPosting.is_active.is_(True), JobPosting.location.isnot(None))
+        .group_by(JobPosting.location)
+        .order_by(func.count(JobPosting.id).desc())
+        .limit(limit)
+    ).all()
+
+    total_with_loc = sum(r.count for r in rows)
+    locations = [
+        {
+            "location": r.location,
+            "count": r.count,
+            "percentage": round(r.count / total_with_loc * 100, 1) if total_with_loc else 0,
+        }
+        for r in rows
+    ]
+
+    return ok(data={"total_with_location": total_with_loc, "locations": locations}).model_dump()
+
+
+@router.get(
+    "/jobs/by-employment-type",
+    summary="Job posting distribution by employment type",
+    response_model=dict,
+)
+def get_jobs_by_employment_type(db: DbSession) -> dict[str, Any]:
+    """Return job posting counts grouped by employment type (full_time, contract, etc.)."""
+    from sqlalchemy import select, func
+    from app.models.job import JobPosting
+
+    rows = db.execute(
+        select(
+            JobPosting.employment_type,
+            func.count(JobPosting.id).label("count"),
+        )
+        .where(JobPosting.is_active.is_(True))
+        .group_by(JobPosting.employment_type)
+        .order_by(func.count(JobPosting.id).desc())
+    ).all()
+
+    total = sum(r.count for r in rows)
+    types = [
+        {
+            "employment_type": r.employment_type,
+            "count": r.count,
+            "percentage": round(r.count / total * 100, 1) if total else 0,
+        }
+        for r in rows
+    ]
+
+    return ok(data={"total": total, "types": types}).model_dump()
