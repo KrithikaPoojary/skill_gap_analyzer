@@ -180,3 +180,42 @@ def get_jobs_by_employment_type(db: DbSession) -> dict[str, Any]:
     ]
 
     return ok(data={"total": total, "types": types}).model_dump()
+
+
+@router.get(
+    "/companies/top",
+    summary="Top hiring companies ranked by active job postings",
+    response_model=dict,
+)
+def get_top_hiring_companies(
+    db: DbSession,
+    limit: int = Query(10, ge=1, le=50, description="Max companies to return"),
+) -> dict[str, Any]:
+    """Retrieve top hiring companies with posting counts and remote job proportions."""
+    from sqlalchemy import case, func, select
+    from app.models.job import JobPosting
+
+    rows = db.execute(
+        select(
+            JobPosting.company_name,
+            func.count(JobPosting.id).label("total_jobs"),
+            func.sum(case((JobPosting.is_remote.is_(True), 1), else_=0)).label("remote_jobs"),
+        )
+        .where(JobPosting.is_active.is_(True))
+        .group_by(JobPosting.company_name)
+        .order_by(func.count(JobPosting.id).desc())
+        .limit(limit)
+    ).all()
+
+    companies = [
+        {
+            "company_name": r.company_name,
+            "total_jobs": r.total_jobs,
+            "remote_jobs": int(r.remote_jobs or 0),
+            "remote_percentage": round(float(r.remote_jobs or 0) / r.total_jobs * 100, 1) if r.total_jobs else 0.0,
+        }
+        for r in rows
+    ]
+
+    return ok(data={"total_companies": len(companies), "companies": companies}).model_dump()
+
