@@ -162,6 +162,66 @@ def get_skill_demand(
     return ok(data=metrics).model_dump()
 
 
+@router.get(
+    "/{skill_id}/related",
+    summary="Get related and co-occurring skills from job postings",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_related_skills(
+    skill_id: int,
+    db: DbSession,
+    limit: int = Query(10, ge=1, le=50, description="Max related skills to return"),
+) -> dict[str, Any]:
+    """Retrieve skills that frequently co-occur with this skill across job postings."""
+    from fastapi import HTTPException
+    from sqlalchemy import func, select, distinct
+    from app.models.associations import JobSkill
+    from app.models.skill import Skill
+
+    skill = skill_repository.get(db, skill_id)
+    if not skill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Skill with ID {skill_id} not found.",
+        )
+
+    job_subq = select(JobSkill.job_id).where(JobSkill.skill_id == skill_id).scalar_subquery()
+
+    rows = db.execute(
+        select(
+            Skill.id,
+            Skill.name,
+            Skill.category,
+            func.count(distinct(JobSkill.job_id)).label("co_occurrence_count"),
+        )
+        .join(JobSkill, JobSkill.skill_id == Skill.id)
+        .where(JobSkill.job_id.in_(job_subq), JobSkill.skill_id != skill_id)
+        .group_by(Skill.id, Skill.name, Skill.category)
+        .order_by(func.count(distinct(JobSkill.job_id)).desc())
+        .limit(limit)
+    ).all()
+
+    related = [
+        {
+            "skill_id": r.id,
+            "name": r.name,
+            "category": r.category,
+            "co_occurrence_count": r.co_occurrence_count,
+        }
+        for r in rows
+    ]
+    return ok(
+        data={
+            "skill_id": skill.id,
+            "skill_name": skill.name,
+            "total_related": len(related),
+            "related_skills": related,
+        }
+    ).model_dump()
+
+
+
 @router.post(
     "/extract",
     summary="Extract technical skills from unstructured text",
