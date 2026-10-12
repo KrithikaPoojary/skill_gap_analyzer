@@ -219,3 +219,69 @@ def get_top_hiring_companies(
 
     return ok(data={"total_companies": len(companies), "companies": companies}).model_dump()
 
+
+@router.get(
+    "/salary-bands",
+    summary="Salary compensation bands by experience level",
+    response_model=dict,
+)
+def get_salary_bands(
+    db: DbSession,
+    currency: str = Query("USD", description="Currency filter"),
+) -> dict[str, Any]:
+    """Retrieve min, max, and average salary distributions grouped by seniority level."""
+    from sqlalchemy import func, or_, select
+    from app.models.job import JobPosting
+
+    rows = db.execute(
+        select(
+            JobPosting.experience_level,
+            func.count(JobPosting.id).label("job_count"),
+            func.avg(JobPosting.min_salary).label("avg_min_salary"),
+            func.avg(JobPosting.max_salary).label("avg_max_salary"),
+            func.min(JobPosting.min_salary).label("lowest_salary"),
+            func.max(JobPosting.max_salary).label("highest_salary"),
+        )
+        .where(
+            JobPosting.is_active.is_(True),
+            JobPosting.salary_currency == currency,
+            or_(JobPosting.min_salary.isnot(None), JobPosting.max_salary.isnot(None)),
+        )
+        .group_by(JobPosting.experience_level)
+    ).all()
+
+    bands = []
+    total_jobs = 0
+    for r in rows:
+        total_jobs += r.job_count
+        avg_min = round(float(r.avg_min_salary), 2) if r.avg_min_salary is not None else None
+        avg_max = round(float(r.avg_max_salary), 2) if r.avg_max_salary is not None else None
+        overall_mid = None
+        if avg_min is not None and avg_max is not None:
+            overall_mid = round((avg_min + avg_max) / 2.0, 2)
+        elif avg_min is not None:
+            overall_mid = avg_min
+        elif avg_max is not None:
+            overall_mid = avg_max
+
+        bands.append(
+            {
+                "experience_level": r.experience_level,
+                "job_count": r.job_count,
+                "avg_min_salary": avg_min,
+                "avg_max_salary": avg_max,
+                "midpoint_salary": overall_mid,
+                "lowest_salary": float(r.lowest_salary) if r.lowest_salary is not None else None,
+                "highest_salary": float(r.highest_salary) if r.highest_salary is not None else None,
+            }
+        )
+
+    return ok(
+        data={
+            "currency": currency,
+            "total_jobs_with_salary": total_jobs,
+            "bands": bands,
+        }
+    ).model_dump()
+
+
