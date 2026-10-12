@@ -357,3 +357,62 @@ def get_my_readiness_dashboard(
             "roles": top,
         }
     ).model_dump()
+
+
+@router.get(
+    "/benchmark/{role_id}",
+    summary="Benchmark candidate readiness against peer cohort for a target role",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_role_peer_benchmark(
+    role_id: int,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Compare candidate's readiness score against other candidates tracking the same target role."""
+    from sqlalchemy import select
+    from app.models.role import TargetRole, UserTargetRole
+
+    role = db.get(TargetRole, role_id)
+    if not role:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Target role with ID {role_id} not found.",
+        )
+
+    try:
+        report = gap_analysis_service.analyse_for_user(
+            db, user_id=current_user.id, role_id=role_id
+        )
+        candidate_score = report.get("coverage_pct", 0.0)
+    except Exception:
+        candidate_score = 0.0
+
+    stmt = select(UserTargetRole.readiness_score).where(UserTargetRole.role_id == role_id)
+    cohort_scores = list(db.scalars(stmt).all())
+
+    cohort_size = len(cohort_scores)
+    if cohort_size > 0:
+        avg_score = round(sum(cohort_scores) / cohort_size, 2)
+        max_score = round(max(cohort_scores), 2)
+        below_count = sum(1 for s in cohort_scores if s <= candidate_score)
+        percentile = round((below_count / cohort_size) * 100, 1)
+    else:
+        avg_score = candidate_score
+        max_score = candidate_score
+        percentile = 100.0
+
+    return ok(
+        data={
+            "role_id": role.id,
+            "role_title": role.title,
+            "candidate_readiness_score": candidate_score,
+            "cohort_size": cohort_size,
+            "average_readiness_score": avg_score,
+            "max_readiness_score": max_score,
+            "percentile_rank": percentile,
+            "is_above_average": candidate_score >= avg_score,
+        }
+    ).model_dump()
+
