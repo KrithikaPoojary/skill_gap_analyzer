@@ -24,6 +24,7 @@ from app.api.v1.endpoints.roadmaps import router as roadmaps_router
 from app.api.v1.endpoints.roles import router as roles_router
 from app.api.v1.endpoints.notifications import router as notifications_router
 from app.api.v1.endpoints.skills import router as skills_router
+from app.api.v1.endpoints.skill_categories import router as skill_categories_router
 
 api_v1_router = APIRouter()
 
@@ -37,6 +38,7 @@ api_v1_router.include_router(jobs_router)
 api_v1_router.include_router(roles_router)
 api_v1_router.include_router(analytics_router)
 api_v1_router.include_router(skills_router)
+api_v1_router.include_router(skill_categories_router)
 api_v1_router.include_router(profile_router)
 api_v1_router.include_router(gap_analysis_router)
 api_v1_router.include_router(recommendations_router)
@@ -44,3 +46,4 @@ api_v1_router.include_router(roadmaps_router)
 api_v1_router.include_router(resume_router)
 api_v1_router.include_router(notifications_router)
 api_v1_router.include_router(admin_router)
+
