@@ -151,3 +151,30 @@ def mark_bulk_read(db: Session, *, user_id: int, notification_ids: list[int]) ->
     )
     db.commit()
     return count
+
+
+_user_preferences: dict[int, dict[str, bool]] = {}
+
+DEFAULT_PREFERENCES: dict[str, bool] = {
+    "email_alerts": True,
+    "weekly_digest": True,
+    "job_matches": True,
+    "skill_recommendations": True,
+    "readiness_milestones": True,
+}
+
+
+def get_preferences(user_id: int) -> dict[str, bool]:
+    """Retrieve notification preferences for a user."""
+    return dict(_user_preferences.get(user_id, DEFAULT_PREFERENCES))
+
+
+def update_preferences(user_id: int, updates: dict[str, bool]) -> dict[str, bool]:
+    """Update notification preferences for a user."""
+    current = get_preferences(user_id)
+    for k, v in updates.items():
+        if k in DEFAULT_PREFERENCES and isinstance(v, bool):
+            current[k] = v
+    _user_preferences[user_id] = current
+    return dict(current)
+

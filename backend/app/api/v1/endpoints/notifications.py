@@ -54,6 +54,21 @@ def get_notification_stats(
     return stats
 
 
+@router.get("/preferences", summary="Get notification preferences for the authenticated user", response_model=dict)
+def get_notification_preferences(current_user: CurrentUser) -> Any:
+    """Retrieve notification channel and alert preferences."""
+    return notification_service.get_preferences(user_id=current_user.id)
+
+
+@router.patch("/preferences", summary="Update notification preferences for the authenticated user", response_model=dict)
+def update_notification_preferences(
+    payload: dict[str, bool],
+    current_user: CurrentUser,
+) -> Any:
+    """Update notification channel and alert preferences."""
+    return notification_service.update_preferences(user_id=current_user.id, updates=payload)
+
+
 @router.patch("/{notification_id}/read", summary="Mark a notification as read", response_model=dict)
 def mark_notification_read(
     notification_id: int,
