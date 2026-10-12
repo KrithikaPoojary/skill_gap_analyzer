@@ -199,6 +199,39 @@ def get_saved_jobs_summary(
 
 
 @router.get(
+    "/saved/stats",
+    summary="Get candidate job bookmark pipeline analytics and conversion rates",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_saved_jobs_pipeline_stats(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Retrieve detailed pipeline analytics including application conversion and interview rates."""
+    raw_stats = saved_job_repository.get_stats_by_user(db, user_id=current_user.id)
+    total = raw_stats["total_tracked_jobs"]
+    saved_count = raw_stats["saved"]
+    applied_count = raw_stats["applied"]
+    interviewing_count = raw_stats["interviewing"]
+    offered_count = raw_stats["offered"]
+
+    active_in_flight = applied_count + interviewing_count
+    total_advanced = total - saved_count
+
+    response = {
+        **raw_stats,
+        "active_applications": active_in_flight,
+        "total_advanced": total_advanced,
+        "application_rate": round((total_advanced / total * 100), 2) if total > 0 else 0.0,
+        "interview_rate": round(((interviewing_count + offered_count) / total_advanced * 100), 2) if total_advanced > 0 else 0.0,
+        "offer_rate": round((offered_count / total_advanced * 100), 2) if total_advanced > 0 else 0.0,
+    }
+    return ok(data=response).model_dump()
+
+
+
+@router.get(
     "/saved",
     summary="List all bookmarked and tracked jobs for the authenticated user",
     status_code=status.HTTP_200_OK,
