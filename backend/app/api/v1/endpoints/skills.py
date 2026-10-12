@@ -275,3 +275,58 @@ def extract_skills_batch(payload: BatchExtractionRequest) -> dict[str, Any]:
         processing_time_ms=report.total_duration_ms,
     )
     return ok(data=response_data.model_dump()).model_dump()
+
+
+@router.get(
+    "/{skill_id}/experience-distribution",
+    summary="Distribution of skill demand across seniority levels",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def get_skill_experience_distribution(
+    skill_id: int,
+    db: DbSession,
+) -> dict[str, Any]:
+    """Retrieve posting counts and percentages by experience level for a specific skill."""
+    from fastapi import HTTPException
+    from sqlalchemy import func, select
+    from app.models.associations import JobSkill
+    from app.models.job import JobPosting
+
+    skill = skill_repository.get(db, skill_id)
+    if not skill:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Skill with ID {skill_id} not found.",
+        )
+
+    rows = db.execute(
+        select(
+            JobPosting.experience_level,
+            func.count(JobPosting.id).label("count"),
+        )
+        .join(JobSkill, JobSkill.job_id == JobPosting.id)
+        .where(JobSkill.skill_id == skill_id, JobPosting.is_active.is_(True))
+        .group_by(JobPosting.experience_level)
+        .order_by(func.count(JobPosting.id).desc())
+    ).all()
+
+    total_postings = sum(r.count for r in rows)
+    distribution = [
+        {
+            "experience_level": r.experience_level,
+            "count": r.count,
+            "percentage": round(r.count / total_postings * 100, 1) if total_postings else 0.0,
+        }
+        for r in rows
+    ]
+
+    return ok(
+        data={
+            "skill_id": skill.id,
+            "skill_name": skill.name,
+            "total_postings": total_postings,
+            "distribution": distribution,
+        }
+    ).model_dump()
+
