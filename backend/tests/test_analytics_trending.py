@@ -1,5 +1,7 @@
 """Tests for analytics trending skills endpoint."""
 
+import uuid
+
 from starlette.testclient import TestClient
 
 from app.db.session import SessionLocal
@@ -9,15 +11,16 @@ from app.models.skill import Skill, SkillCategory
 
 
 def test_get_trending_skills(client: TestClient) -> None:
+    unique = uuid.uuid4().hex[:8]
     with SessionLocal() as db:
-        # Create a skill and job posting
+        # Create a skill and job posting with unique names to avoid collisions
         s = Skill(
-            name="Rust_Trend_Test",
-            normalized_name="rust_trend_test",
+            name=f"Rust_Trend_{unique}",
+            normalized_name=f"rust_trend_{unique}",
             category=SkillCategory.LANGUAGE.value,
         )
         job = JobPosting(
-            title="Rust Systems Engineer",
+            title=f"Rust Systems Engineer {unique}",
             company_name="RustCorp",
             description="High performance systems",
             is_active=True,
