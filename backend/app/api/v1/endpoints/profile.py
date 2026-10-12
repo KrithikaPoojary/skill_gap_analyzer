@@ -555,3 +555,28 @@ def get_my_skill_stats(current_user: CurrentUser, db: DbSession) -> dict[str, An
             "by_category": by_category,
         }
     ).model_dump()
+
+
+@router.get(
+    "/me/export",
+    summary="Export candidate complete profile, skills, and target roles data",
+    status_code=status.HTTP_200_OK,
+    response_model=dict,
+)
+def export_my_profile(current_user: CurrentUser, db: DbSession) -> dict[str, Any]:
+    """Return complete structured export of the user's profile, added skills, and tracked target roles."""
+    from datetime import datetime, timezone
+
+    profile_data = profile_service.get_full_profile(db, user_id=current_user.id) or {}
+    export_payload = {
+        "exported_at": datetime.now(timezone.utc).isoformat(),
+        "user": {
+            "id": current_user.id,
+            "email": current_user.email,
+            "full_name": current_user.full_name,
+        },
+        **profile_data,
+    }
+    return ok(data=export_payload, message="Profile export generated successfully.").model_dump()
+
+
