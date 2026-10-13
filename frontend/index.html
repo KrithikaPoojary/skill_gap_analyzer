@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkillBridge — Skill Gap Analyzer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- Authentication Views -->
+<div id="auth-page" class="auth-wrapper">
+  <div class="auth-glow"></div>
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="logo-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+        </svg>
+      </span>
+      <span class="logo-text">Skill<b>Bridge</b></span>
+    </div>
+
+    <!-- Login Form -->
+    <div id="login-form">
+      <h2>Welcome back</h2>
+      <p class="auth-sub">Sign in to your candidate account</p>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-password" placeholder="••••••••" />
+      </div>
+      <div id="login-error" class="error-msg"></div>
+      <button class="btn-primary" onclick="login()">Sign In</button>
+      <p class="auth-switch">Don't have an account? <a href="#" onclick="showRegister()">Create one</a></p>
+    </div>
+
+    <!-- Register Form -->
+    <div id="register-form" style="display:none">
+      <h2>Create account</h2>
+      <p class="auth-sub">Start your personalized skill gap analysis</p>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="reg-name" placeholder="Krithika Poojary" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="reg-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="reg-password" placeholder="Min 8 characters" />
+      </div>
+      <div id="reg-error" class="error-msg"></div>
+      <button class="btn-primary" onclick="register()">Create Account</button>
+      <p class="auth-switch">Already have an account? <a href="#" onclick="showLogin()">Sign in</a></p>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
