@@ -267,6 +267,30 @@
       </div>
     </div>
 
+    <!-- Roadmap View -->
+    <div id="page-roadmap" class="page">
+      <div class="page-header">
+        <div>
+          <h1>Learning Roadmap</h1>
+          <p class="page-sub">Personalized curriculum based on missing role skills</p>
+        </div>
+      </div>
+      <div id="roadmap-content">
+        <div class="card">
+          <h3>Generate Learning Path</h3>
+          <p style="color:var(--muted);margin:8px 0 16px">Select a target role to calculate skill gaps and build milestones</p>
+          <div class="form-row">
+            <select id="roadmap-role-select" class="select-box">
+              <option value="">Select a role...</option>
+            </select>
+            <input type="text" id="roadmap-title" class="input-box" placeholder="Custom path title (optional)" />
+            <button class="btn-primary" onclick="generateRoadmap()">Generate</button>
+          </div>
+        </div>
+        <div id="my-roadmaps" style="margin-top:24px"></div>
+      </div>
+    </div>
+
     
   </main>
 </div>
