@@ -138,8 +138,109 @@
     </div>
   </aside>
 
-  
-  <main class="main-content"></main>
+  <!-- Main Content Area -->
+  <main class="main-content">
+
+    <!-- Dashboard View -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div>
+          <h1 id="welcome-msg">Candidate Dashboard</h1>
+          <p class="page-sub">Skill gap tracking and readiness overview</p>
+        </div>
+        <button class="btn-primary" onclick="showPage('skills',document.getElementById('nav-skills'))">+ Add Skills</button>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(99,102,241,0.15); color: #818cf8;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-val" id="stat-skills">—</div>
+            <div class="stat-label">Claimed Skills</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(6,182,212,0.15); color: #06b6d4;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="20" height="14" x="2" y="7" rx="2" ry="2"></rect>
+              <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-val" id="stat-roles">—</div>
+            <div class="stat-label">Industry Roles</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(16,185,129,0.15); color: #10b981;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+              <polyline points="22 4 12 14.01 9 11.01"></polyline>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-val" id="stat-roadmaps">—</div>
+            <div class="stat-label">Active Roadmaps</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: rgba(245,158,11,0.15); color: #f59e0b;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <div>
+            <div class="stat-val" id="stat-health">—</div>
+            <div class="stat-label">API Health</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sections Grid -->
+      <div class="two-col">
+        <div class="card">
+          <div class="card-header">
+            <h3>Target Roles</h3>
+            <button class="btn-sm" onclick="showPage('roles',document.getElementById('nav-roles'))">Browse Roles</button>
+          </div>
+          <div id="dash-roles-list" class="list-items">
+            <div class="empty-state">Loading target roles...</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header">
+            <h3>Active Roadmaps</h3>
+            <button class="btn-sm" onclick="showPage('roadmap',document.getElementById('nav-roadmap'))">View All</button>
+          </div>
+          <div id="dash-roadmap-list" class="list-items">
+            <div class="empty-state">No roadmaps generated yet.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Profile Summary -->
+      <div class="card" style="margin-top:20px">
+        <div class="card-header">
+          <h3>Candidate Profile</h3>
+          <button class="btn-sm" onclick="showPage('skills',document.getElementById('nav-skills'))">Manage Skills</button>
+        </div>
+        <div id="profile-summary" class="profile-grid">
+          <div class="profile-item"><span class="label">Name</span><span id="p-name">—</span></div>
+          <div class="profile-item"><span class="label">Email</span><span id="p-email">—</span></div>
+          <div class="profile-item"><span class="label">Skills Added</span><span id="p-skills">—</span></div>
+          <div class="profile-item"><span class="label">Account Status</span><span id="p-since">Active</span></div>
+        </div>
+      </div>
+    </div>
+
+    
+  </main>
 </div>
 </body>
 </html>
