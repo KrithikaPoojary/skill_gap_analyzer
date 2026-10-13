@@ -460,3 +460,98 @@ body {
 .form-row .input-box  { flex: 1; min-width: 160px; }
 .form-row .btn-primary { width: auto; padding: 12px 24px; }
 
+/* ── MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+  backdrop-filter: blur(4px);
+}
+.modal-overlay.open { display: flex; }
+
+.modal-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 32px;
+  width: 400px;
+  max-width: 95vw;
+  animation: fadeUp 0.2s ease;
+}
+.modal-card h3 { font-size: 18px; font-weight: 700; }
+.modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+.modal-actions .btn-primary { flex: 1; }
+
+.btn-outline {
+  flex: 1;
+  padding: 13px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.btn-outline:hover { border-color: var(--text); color: var(--text); }
+
+/* ── EMPTY STATE ── */
+.empty-state {
+  text-align: center;
+  color: var(--muted2);
+  padding: 32px;
+  font-size: 13px;
+}
+
+/* ── BADGE STATUS ── */
+.badge-healthy { color: var(--success); font-weight: 600; }
+.badge-error   { color: var(--danger);  font-weight: 600; }
+
+/* ── SALARY ITEM ── */
+.salary-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.salary-item:last-child { border-bottom: none; }
+.salary-role { font-weight: 500; font-size: 14px; }
+.salary-range { font-size: 13px; color: var(--success); font-weight: 600; }
+.salary-loc   { font-size: 12px; color: var(--muted); }
+
+/* ── LOADING SPINNER ── */
+.spinner {
+  display: inline-block;
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.2);
+  border-top-color: var(--primary-light);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── TOAST ── */
+#toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 14px 20px;
+  font-size: 14px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all 0.3s ease;
+  z-index: 9999;
+}
+#toast.show { transform: translateY(0); opacity: 1; }
+#toast.success { border-color: var(--success); }
+#toast.error   { border-color: var(--danger);  }
