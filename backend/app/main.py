@@ -13,9 +13,11 @@ Day 2 additions:
 """
 
 import logging
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.v1.router import api_v1_router
 from app.core.config import settings
@@ -142,6 +144,11 @@ def create_application() -> FastAPI:
 
     # ── 5. Routes ─────────────────────────────────────────────────────────── #
     application.include_router(api_v1_router, prefix=settings.api_v1_prefix)
+
+    # ── 6. Frontend UI ────────────────────────────────────────────────────── #
+    frontend_dir = Path(__file__).resolve().parent.parent.parent / "frontend"
+    if frontend_dir.exists():
+        application.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
 
     logger.info(
         "Application '%s' v%s ready [env=%s]",
