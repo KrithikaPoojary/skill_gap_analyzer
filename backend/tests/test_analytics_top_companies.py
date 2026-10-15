@@ -32,25 +32,22 @@ class TestAnalyticsTopCompanies:
         company_beta = f"BetaCorp {suffix}"
 
         with SessionLocal() as db:
-            j1 = JobPosting(
-                title=f"SWE 1 {suffix}",
-                company_name=company_alpha,
-                description="desc",
-                is_remote=True,
-            )
-            j2 = JobPosting(
-                title=f"SWE 2 {suffix}",
-                company_name=company_alpha,
-                description="desc",
-                is_remote=False,
-            )
-            j3 = JobPosting(
-                title=f"SWE 3 {suffix}",
+            jobs_alpha = [
+                JobPosting(
+                    title=f"SWE {i} {suffix}",
+                    company_name=company_alpha,
+                    description="desc",
+                    is_remote=(i % 2 == 0),
+                )
+                for i in range(30)
+            ]
+            j_beta = JobPosting(
+                title=f"SWE Beta {suffix}",
                 company_name=company_beta,
                 description="desc",
                 is_remote=True,
             )
-            db.add_all([j1, j2, j3])
+            db.add_all(jobs_alpha + [j_beta])
             db.commit()
 
         resp = client.get("/api/v1/analytics/companies/top?limit=50")
@@ -59,6 +56,6 @@ class TestAnalyticsTopCompanies:
         comps = {c["company_name"]: c for c in data["companies"]}
 
         assert company_alpha in comps
-        assert comps[company_alpha]["total_jobs"] >= 2
-        assert comps[company_alpha]["remote_jobs"] >= 1
+        assert comps[company_alpha]["total_jobs"] >= 30
+        assert comps[company_alpha]["remote_jobs"] >= 15
         assert "remote_percentage" in comps[company_alpha]
